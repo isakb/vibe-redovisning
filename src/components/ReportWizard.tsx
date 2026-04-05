@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { SieData } from '@/lib/sieParser';
-import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring } from '@/lib/k2Calculations';
+import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, formatFiscalYear } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ReportEditor } from './ReportEditor';
 import { ReportPreview } from './ReportPreview';
@@ -16,26 +17,29 @@ interface ReportWizardProps {
 }
 
 export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
-  const yearIndices = [0, -1]; // Current + previous for RR/BR
-  
-  const incomeStatement = calculateIncomeStatement(sieData, yearIndices);
-  const balanceSheet = calculateBalanceSheet(sieData, yearIndices);
-  const flerarsOversikt = calculateFlerarsOversikt(sieData);
-  const egetKapitalForandring = calculateEgetKapitalForandring(sieData);
+  const sortedYears = useMemo(() => 
+    [...sieData.fiscalYears].sort((a, b) => b.index - a.index), 
+    [sieData.fiscalYears]
+  );
 
-  // Get årets resultat for default report data
-  const aretsResultat = incomeStatement.totalResult[0] || 0;
+  const [selectedYearIndex, setSelectedYearIndex] = useState(sortedYears[0]?.index ?? 0);
+  const [activeTab, setActiveTab] = useState('edit');
+
+  const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
+  
+  const incomeStatement = useMemo(() => calculateIncomeStatement(sieData, yearIndices), [sieData, selectedYearIndex]);
+  const balanceSheet = useMemo(() => calculateBalanceSheet(sieData, yearIndices), [sieData, selectedYearIndex]);
+  const flerarsOversikt = useMemo(() => calculateFlerarsOversikt(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
+  const egetKapitalForandring = useMemo(() => calculateEgetKapitalForandring(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
+
+  const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
   
   const [reportData, setReportData] = useState<ReportData>(
     createDefaultReportData(aretsResultat)
   );
 
-  const [activeTab, setActiveTab] = useState('edit');
-
-  const currentFY = sieData.fiscalYears.find(fy => fy.index === 0);
-  const fiscalYearLabel = currentFY 
-    ? `${currentFY.startDate.slice(0,4)}-${currentFY.startDate.slice(4,6)}-${currentFY.startDate.slice(6,8)} – ${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}`
-    : '';
+  const selectedFY = sieData.fiscalYears.find(fy => fy.index === selectedYearIndex);
+  const fiscalYearLabel = selectedFY ? formatFiscalYear(selectedFY) : '';
 
   const handleExportPDF = () => {
     try {
@@ -72,10 +76,29 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
               </p>
             </div>
           </div>
-          <Button onClick={handleExportPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportera PDF
-          </Button>
+          <div className="flex items-center gap-3">
+            {sortedYears.length > 1 && (
+              <Select
+                value={String(selectedYearIndex)}
+                onValueChange={(v) => setSelectedYearIndex(Number(v))}
+              >
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortedYears.map(fy => (
+                    <SelectItem key={fy.index} value={String(fy.index)}>
+                      {formatFiscalYear(fy)}{fy.index === sortedYears[0].index ? ' (senaste)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button onClick={handleExportPDF}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportera PDF
+            </Button>
+          </div>
         </div>
       </div>
 
