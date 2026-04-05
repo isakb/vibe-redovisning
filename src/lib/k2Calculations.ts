@@ -270,7 +270,7 @@ export function calculateFlerarsOversikt(data: SieData): FlerarsOversikt {
   // Use up to 4+ years as required by K2
   const years = data.fiscalYears
     .filter(fy => fy.index >= -3 && fy.index <= 0)
-    .sort((a, b) => a.index - b.index);
+    .sort((a, b) => b.index - a.index);
 
   const yearLabels = years.map(fy => ({
     index: fy.index,
