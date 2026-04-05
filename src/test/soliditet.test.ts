@@ -4,14 +4,14 @@ import { SieData } from '@/lib/sieParser';
 
 function makeSieData(overrides: Partial<SieData> = {}): SieData {
   return {
-    company: { name: 'Test AB', orgNumber: '556000-0000', address: '' },
+    company: { name: 'Test AB', orgNumber: '556000-0000', program: '', generatedDate: '', accountPlan: '' },
     fiscalYears: [
       { index: 0, startDate: '20250101', endDate: '20251231' },
       { index: -1, startDate: '20240101', endDate: '20241231' },
       { index: -2, startDate: '20230101', endDate: '20231231' },
       { index: -3, startDate: '20220101', endDate: '20221231' },
     ],
-    accounts: [],
+    accounts: new Map(),
     openingBalances: [],
     closingBalances: [],
     results: [],
