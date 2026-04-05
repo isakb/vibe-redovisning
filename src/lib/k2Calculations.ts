@@ -267,9 +267,10 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
 }
 
 export function calculateFlerarsOversikt(data: SieData): FlerarsOversikt {
-  // Use up to 4+ years as required by K2
+export function calculateFlerarsOversikt(data: SieData, selectedYearIndex: number = 0): FlerarsOversikt {
+  // Show up to 4 years ending at the selected year
   const years = data.fiscalYears
-    .filter(fy => fy.index >= -3 && fy.index <= 0)
+    .filter(fy => fy.index <= selectedYearIndex && fy.index >= selectedYearIndex - 3)
     .sort((a, b) => b.index - a.index);
 
   const yearLabels = years.map(fy => ({
