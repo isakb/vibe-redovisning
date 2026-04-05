@@ -38,16 +38,21 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
     : '';
 
   const handleExportPDF = () => {
-    generatePDF({
-      company: sieData.company,
-      fiscalYear: fiscalYearLabel,
-      reportData,
-      incomeStatement,
-      balanceSheet,
-      flerarsOversikt,
-      egetKapitalForandring,
-      fiscalYears: sieData.fiscalYears,
-    });
+    try {
+      generatePDF({
+        company: sieData.company,
+        fiscalYear: fiscalYearLabel,
+        reportData,
+        incomeStatement,
+        balanceSheet,
+        flerarsOversikt,
+        egetKapitalForandring,
+        fiscalYears: sieData.fiscalYears,
+      });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Kunde inte generera PDF. Försök igen.');
+    }
   };
 
   return (
