@@ -380,7 +380,9 @@ export function generatePDF(options: PDFExportOptions) {
 
   addFooter(doc.getNumberOfPages());
 
-  // Save
-  const fileName = `arsredovisning_${company.orgNumber.replace('-', '')}_${currentFY?.endDate.slice(0, 4) || ''}.pdf`;
-  doc.save(fileName);
+  // Open in new tab (works in sandboxed iframes where doc.save() is blocked)
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }

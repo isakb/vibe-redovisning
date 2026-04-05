@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { SieData } from '@/lib/sieParser';
 import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
@@ -37,16 +38,21 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
     : '';
 
   const handleExportPDF = () => {
-    generatePDF({
-      company: sieData.company,
-      fiscalYear: fiscalYearLabel,
-      reportData,
-      incomeStatement,
-      balanceSheet,
-      flerarsOversikt,
-      egetKapitalForandring,
-      fiscalYears: sieData.fiscalYears,
-    });
+    try {
+      generatePDF({
+        company: sieData.company,
+        fiscalYear: fiscalYearLabel,
+        reportData,
+        incomeStatement,
+        balanceSheet,
+        flerarsOversikt,
+        egetKapitalForandring,
+        fiscalYears: sieData.fiscalYears,
+      });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Kunde inte generera PDF. Försök igen.');
+    }
   };
 
   return (
