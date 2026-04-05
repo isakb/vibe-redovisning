@@ -15,7 +15,7 @@ function makeSieData(overrides: Partial<SieData> = {}): SieData {
     openingBalances: [],
     closingBalances: [],
     results: [],
-    transactions: [],
+    verifications: [],
     ...overrides,
   };
 }
