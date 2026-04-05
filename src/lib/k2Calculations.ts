@@ -312,12 +312,11 @@ export interface EgetKapitalForandring {
   rows: EgetKapitalChange[];
 }
 
-export function calculateEgetKapitalForandring(data: SieData): EgetKapitalForandring {
+export function calculateEgetKapitalForandring(data: SieData, selectedYearIndex: number = 0): EgetKapitalForandring {
   const ub = data.closingBalances;
   const ib = data.openingBalances;
 
-  // For current year (index 0) and previous year (index -1)
-  const yearIndices = [0];
+  const yearIndices = [selectedYearIndex];
 
   const getVal = (balances: SieBalance[], yi: number, from: number, to: number) =>
     sumRange(balances, yi, from, to);
