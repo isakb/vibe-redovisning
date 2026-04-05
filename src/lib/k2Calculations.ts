@@ -1,6 +1,6 @@
 // K2 Financial Calculations - Maps BAS 2014 accounts to K2 årsredovisning line items
 
-import { SieData, SieBalance } from './sieParser';
+import { SieData, SieBalance, SieFiscalYear } from './sieParser';
 
 export interface K2LineItem {
   label: string;
