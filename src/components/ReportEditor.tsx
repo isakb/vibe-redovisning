@@ -186,7 +186,7 @@ export function ReportEditor({
               <Label>Balanseras i ny räkning (kr)</Label>
               <Input
                 type="number"
-                value={reportData.tillBalanseratResultat}
+                value={Math.round(reportData.tillBalanseratResultat)}
                 disabled
                 className="bg-muted"
               />
