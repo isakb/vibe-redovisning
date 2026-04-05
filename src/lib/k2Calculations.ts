@@ -298,9 +298,10 @@ export function calculateFlerarsOversikt(data: SieData): FlerarsOversikt {
     balansomslutning[yi] = sumRange(ub, yi, 1000, 1999);
 
     // Soliditet = eget kapital / balansomslutning * 100
-    const egetKapital = sumRange(ub, yi, 2080, 2099);
+    // Eget kapital is stored as negative (credit) in SIE, negate to get accounting value
+    const egetKapital = -sumRange(ub, yi, 2080, 2099);
     const totalAssets = balansomslutning[yi];
-    soliditet[yi] = totalAssets !== 0 ? Math.round((Math.abs(egetKapital) / totalAssets) * 100) : 0;
+    soliditet[yi] = totalAssets !== 0 ? Math.round((egetKapital / totalAssets) * 100) : 0;
   }
 
   return { years: yearLabels, nettoomsattning, resultatEfterFinansiellaPoster: resultatEfterFinansiella, balansomslutning, soliditet };
