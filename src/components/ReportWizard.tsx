@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { SieData } from '@/lib/sieParser';
 import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
