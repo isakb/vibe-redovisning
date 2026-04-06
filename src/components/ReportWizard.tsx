@@ -52,6 +52,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
         flerarsOversikt,
         egetKapitalForandring,
         fiscalYears: sieData.fiscalYears,
+        selectedYearIndex,
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
