@@ -380,9 +380,15 @@ export function generatePDF(options: PDFExportOptions) {
 
   addFooter(doc.getNumberOfPages());
 
-  // Open in new tab (works in sandboxed iframes where doc.save() is blocked)
+  // Download using a temporary link (works in sandboxed iframes)
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `arsredovisning_${company.orgNumber.replace('-', '')}_${currentFY?.endDate.slice(0, 4) || ''}.pdf`;
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
