@@ -191,6 +191,14 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
     }
     return result;
   };
+  // Credit accounts (2xxx) are stored as negative in SIE; negate to show as positive
+  const amountsNeg = (from: number, to: number) => {
+    const result: Record<number, number> = {};
+    for (const yi of yearIndices) {
+      result[yi] = -sumRange(ub, yi, from, to);
+    }
+    return result;
+  };
 
   const sumAmounts = (...ranges: Record<number, number>[]): Record<number, number> => {
     const result: Record<number, number> = {};
@@ -217,24 +225,24 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
 
   // EGET KAPITAL OCH SKULDER
   // Eget kapital
-  const aktiekapital = amounts(2080, 2089);
-  const balanserat = amounts(2090, 2098);
-  const aretsResultatEK = amounts(2099, 2099);
+  const aktiekapital = amountsNeg(2080, 2089);
+  const balanserat = amountsNeg(2090, 2098);
+  const aretsResultatEK = amountsNeg(2099, 2099);
   const summaEgetKapital = sumAmounts(aktiekapital, balanserat, aretsResultatEK);
 
   // Obeskattade reserver (2100-2149)
-  const obeskatadeReserver = amounts(2100, 2149);
+  const obeskatadeReserver = amountsNeg(2100, 2149);
 
   // Avsättningar (2200-2299)
-  const avsattningar = amounts(2200, 2299);
+  const avsattningar = amountsNeg(2200, 2299);
 
   // Långfristiga skulder (2300-2399 — was 2100-2399, now remapped)
-  const langfristigaSkulder = amounts(2150, 2199); // remaining 2150-2199 if any
-  const langfristigaSkulder2 = amounts(2300, 2399);
+  const langfristigaSkulder = amountsNeg(2150, 2199);
+  const langfristigaSkulder2 = amountsNeg(2300, 2399);
   const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
 
   // Kortfristiga skulder
-  const kortfristigaSkulder = amounts(2400, 2999);
+  const kortfristigaSkulder = amountsNeg(2400, 2999);
 
   const summaSkulder = sumAmounts(summaLangfristiga, kortfristigaSkulder);
   const summaEKochSkulder = sumAmounts(summaEgetKapital, obeskatadeReserver, avsattningar, summaSkulder);
