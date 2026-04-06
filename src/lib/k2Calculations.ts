@@ -371,8 +371,9 @@ export function calculateFlerarsOversikt(
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran 2518
-    const totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
+    // Balansomslutning = summa tillgångar (1000-1999)
+    // Note: 2518 reclassification is handled in balance sheet display only
+    const totalAssets = sumRange(ub, yi, 1000, 1999);
     balansomslutning[yi] = totalAssets;
 
     // Soliditet = justerat eget kapital / balansomslutning × 100
