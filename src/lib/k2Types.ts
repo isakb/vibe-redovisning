@@ -90,6 +90,7 @@ export function createDefaultReportData(aretsResultat: number, profile?: Company
     utdelning: 0,
     tillBalanseratResultat: aretsResultat,
     ejAvdragsgillaPoster: 0,
+    outnyttjatUnderskott: 0,
     skattesats: 20.6,
     flerarsOverrides: {},
     redovisningsprinciper: defaultRedovisningsprinciper,

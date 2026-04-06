@@ -457,6 +457,7 @@ export function calculateSkatteberakning(
   return {
     resultatForeSkatt,
     ejAvdragsgillaPoster: ejAvdragsgilla,
+    outnyttjatUnderskott,
     skattemassigResultat,
     skattesats: reportData.skattesats,
     skattPaAretsResultat,
