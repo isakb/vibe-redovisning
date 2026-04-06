@@ -129,6 +129,12 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange }:
                   <td className="text-right py-2">{formatSEK(s.ejAvdragsgillaPoster)} kr</td>
                 </tr>
               )}
+              {s.outnyttjatUnderskott !== 0 && (
+                <tr className="border-b">
+                  <td className="py-2">Outnyttjat underskott från fg. år</td>
+                  <td className="text-right py-2">-{formatSEK(s.outnyttjatUnderskott)} kr</td>
+                </tr>
+              )}
               <tr className="border-b">
                 <td className="py-2">Skattesats</td>
                 <td className="text-right py-2">{s.skattesats}%</td>
