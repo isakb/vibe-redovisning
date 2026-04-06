@@ -48,7 +48,11 @@ const Index = () => {
         )}
       </div>
       <footer className="py-3 px-4 text-center text-xs text-muted-foreground/60 border-t border-border/30">
-        En gratis tjänst med öppen källkod från teamet bakom{' '}
+        En gratis tjänst med{' '}
+        <a href="https://github.com/isakb/vibe-redovisning" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+          öppen källkod
+        </a>
+        {' '}från teamet bakom{' '}
         <a href="https://www.skatteguru.se/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
           Skatteguru
         </a>
