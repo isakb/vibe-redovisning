@@ -191,6 +191,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               egetKapitalForandring={egetKapitalForandring}
               fiscalYears={sieData.fiscalYears}
               skatteberakning={skatteberakning}
+              selectedYearIndex={selectedYearIndex}
             />
           </TabsContent>
         </Tabs>
