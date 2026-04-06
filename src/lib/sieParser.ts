@@ -252,3 +252,81 @@ export function parseSieFile(buffer: ArrayBuffer): SieData {
 
   return data;
 }
+
+/**
+ * Merge multiple SIE files into a single SieData.
+ * Company info is taken from the file with the latest fiscal year.
+ * Fiscal years, balances, results, and verifications are merged/deduplicated.
+ */
+export function mergeSieData(files: SieData[]): SieData {
+  if (files.length === 0) throw new Error('No files to merge');
+  if (files.length === 1) return files[0];
+
+  // Sort files by latest fiscal year to pick company info from newest
+  const sorted = [...files].sort((a, b) => {
+    const aMax = Math.max(...a.fiscalYears.map(fy => fy.index));
+    const bMax = Math.max(...b.fiscalYears.map(fy => fy.index));
+    return bMax - aMax;
+  });
+
+  const merged: SieData = {
+    company: { ...sorted[0].company },
+    fiscalYears: [],
+    accounts: new Map(),
+    openingBalances: [],
+    closingBalances: [],
+    results: [],
+    verifications: [],
+  };
+
+  const seenFY = new Set<number>();
+  const seenIB = new Set<string>();
+  const seenUB = new Set<string>();
+  const seenRES = new Set<string>();
+
+  for (const file of sorted) {
+    // Merge accounts
+    for (const [num, acct] of file.accounts) {
+      if (!merged.accounts.has(num)) {
+        merged.accounts.set(num, { ...acct });
+      }
+    }
+
+    // Merge fiscal years (deduplicate by index)
+    for (const fy of file.fiscalYears) {
+      if (!seenFY.has(fy.index)) {
+        seenFY.add(fy.index);
+        merged.fiscalYears.push({ ...fy });
+      }
+    }
+
+    // Merge balances (deduplicate by yearIndex+accountNumber)
+    for (const b of file.openingBalances) {
+      const key = `${b.yearIndex}:${b.accountNumber}`;
+      if (!seenIB.has(key)) {
+        seenIB.add(key);
+        merged.openingBalances.push({ ...b });
+      }
+    }
+    for (const b of file.closingBalances) {
+      const key = `${b.yearIndex}:${b.accountNumber}`;
+      if (!seenUB.has(key)) {
+        seenUB.add(key);
+        merged.closingBalances.push({ ...b });
+      }
+    }
+    for (const b of file.results) {
+      const key = `${b.yearIndex}:${b.accountNumber}`;
+      if (!seenRES.has(key)) {
+        seenRES.add(key);
+        merged.results.push({ ...b });
+      }
+    }
+
+    // Merge verifications
+    merged.verifications.push(...file.verifications);
+  }
+
+  merged.fiscalYears.sort((a, b) => b.index - a.index);
+  return merged;
+}

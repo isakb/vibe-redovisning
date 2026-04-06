@@ -51,9 +51,40 @@ Intäkter redovisas i den period de avser oavsett tidpunkten för betalning.
 
 Fordringar och skulder i utländsk valuta värderas till balansdagens kurs.`;
 
-export function createDefaultReportData(aretsResultat: number): ReportData {
+// Company profile persisted in localStorage
+export interface CompanyProfile {
+  orgNumber: string;
+  name: string;
+  verksamhetsbeskrivning: string;
+  signatories: Signatory[];
+  plats: string;
+}
+
+export function loadCompanyProfile(orgNumber: string): CompanyProfile | null {
+  try {
+    const raw = localStorage.getItem(`k2-company-${orgNumber}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+export function saveCompanyProfile(profile: CompanyProfile): void {
+  localStorage.setItem(`k2-company-${profile.orgNumber}`, JSON.stringify(profile));
+}
+
+export function loadYearReports(orgNumber: string): Record<number, ReportData> {
+  try {
+    const raw = localStorage.getItem(`k2-reports-${orgNumber}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+export function saveYearReports(orgNumber: string, data: Record<number, ReportData>): void {
+  localStorage.setItem(`k2-reports-${orgNumber}`, JSON.stringify(data));
+}
+
+export function createDefaultReportData(aretsResultat: number, profile?: CompanyProfile | null): ReportData {
   return {
-    verksamhetsbeskrivning: 'Bolaget bedriver konsultverksamhet inom IT och teknik.',
+    verksamhetsbeskrivning: profile?.verksamhetsbeskrivning || 'Bolaget bedriver konsultverksamhet inom IT och teknik.',
     vasEntligaHandelser: '',
     utdelning: 0,
     tillBalanseratResultat: aretsResultat,
@@ -62,8 +93,8 @@ export function createDefaultReportData(aretsResultat: number): ReportData {
     flerarsOverrides: {},
     redovisningsprinciper: defaultRedovisningsprinciper,
     medeltalAnstallda: '0',
-    signatories: [{ name: '', role: 'Styrelseledamot' }],
+    signatories: profile?.signatories?.length ? [...profile.signatories] : [{ name: '', role: 'Styrelseledamot' }],
     signDate: new Date().toISOString().slice(0, 10),
-    plats: '',
+    plats: profile?.plats || '',
   };
 }
