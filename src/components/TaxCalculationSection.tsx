@@ -1,11 +1,14 @@
 import { Skatteberakning, formatSEK } from '@/lib/k2Calculations';
 import { ReportData } from '@/lib/k2Types';
+import { SieCompanyInfo } from '@/lib/sieParser';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, CheckCircle, FileText } from 'lucide-react';
+import { useState } from 'react';
+import { VerificationModal } from './VerificationModal';
 
 interface TaxCalculationSectionProps {
   skatteberakning: Skatteberakning;
