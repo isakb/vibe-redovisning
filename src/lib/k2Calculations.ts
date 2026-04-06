@@ -378,7 +378,7 @@ export function calculateFlerarsOversikt(
     // Soliditet = justerat eget kapital / balansomslutning × 100
     // Justerat EK = EK + (1 - skattesats) × obeskattade reserver
     let egetKapital = -sumRange(ub, yi, 2080, 2099);
-    const obeskatadeReserver = -sumRange(ub, yi, 2100, 2149);
+    const obeskatadeReserver = -sumRange(ub, yi, 2100, 2199);
     
     // For current year with tax adjustment, add calculated årets resultat to EK
     if (yi === selectedYearIndex && taxAdjustment) {
