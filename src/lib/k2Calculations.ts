@@ -489,11 +489,17 @@ export interface Verifikationsrad {
   kredit: number;
 }
 
+export interface DetailAdjustment {
+  label: string;
+  amount: number;
+}
+
 export interface Skatteberakning {
   resultatForeSkatt: number;
   ejAvdragsgillaPoster: number;
   outnyttjatUnderskott: number;
   skattemassigResultat: number;
+  beskattningsbarInkomst: number;
   skattesats: number;
   skattPaAretsResultat: number;
   aretsResultat: number;
@@ -501,6 +507,7 @@ export interface Skatteberakning {
   skatteverifikation: Verifikationsrad[];
   resultatverifikation: Verifikationsrad[];
   bokforingsdatum: string;
+  detailAdjustments: DetailAdjustment[];
 }
 
 export function calculateSkatteberakning(
