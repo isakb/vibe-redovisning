@@ -85,7 +85,7 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
                   <div className="flex items-center justify-end gap-1">
                     <Input
                       type="number"
-                      value={reportData.outnyttjatUnderskott}
+                      value={reportData.outnyttjatUnderskott || s.outnyttjatUnderskott || ''}
                       onChange={e => update({ outnyttjatUnderskott: parseFloat(e.target.value) || 0 })}
                       className="w-32 text-right h-8"
                     />
