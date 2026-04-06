@@ -256,6 +256,13 @@ export function ReportEditor({
         </CardContent>
       </Card>
 
+      {/* Skatteberäkning & Bokslut */}
+      <TaxCalculationSection
+        skatteberakning={skatteberakning}
+        reportData={reportData}
+        onChange={onChange}
+      />
+
       {/* Noter */}
       <Card>
         <CardHeader>

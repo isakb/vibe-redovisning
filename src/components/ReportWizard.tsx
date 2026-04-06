@@ -114,6 +114,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
               balanceSheet={balanceSheet}
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
+              skatteberakning={skatteberakning}
             />
           </TabsContent>
           
