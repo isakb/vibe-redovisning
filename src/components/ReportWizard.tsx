@@ -104,15 +104,6 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
 
   const aretsResultat = adjustedIncomeStatement.totalResult[selectedYearIndex] || 0;
 
-  // Update tillBalanseratResultat when year changes (full "till förfogande stående medel")
-  useEffect(() => {
-    const utgangRow = egetKapitalForandring.rows[egetKapitalForandring.rows.length - 1];
-    const tillForfogande = (utgangRow?.balanserat[selectedYearIndex] || 0) + (utgangRow?.aretsResultat[selectedYearIndex] || 0);
-    if (reportData.tillBalanseratResultat === 0 && tillForfogande !== 0) {
-      setReportData({ ...reportData, tillBalanseratResultat: tillForfogande });
-    }
-  }, [selectedYearIndex, egetKapitalForandring]);
-
   // When tax bookings are missing, inject calculated tax into balance sheet
   const taxAdjustment = useMemo(() => {
     if (!skatteberakning.saknarSkattebokning) return undefined;
@@ -133,6 +124,15 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
     ),
     [sieData, selectedYearIndex, skatteberakning]
   );
+
+  // Update tillBalanseratResultat when year changes (full "till förfogande stående medel")
+  useEffect(() => {
+    const utgangRow = egetKapitalForandring.rows[egetKapitalForandring.rows.length - 1];
+    const tillForfogande = (utgangRow?.balanserat[selectedYearIndex] || 0) + (utgangRow?.aretsResultat[selectedYearIndex] || 0);
+    if (reportData.tillBalanseratResultat === 0 && tillForfogande !== 0) {
+      setReportData({ ...reportData, tillBalanseratResultat: tillForfogande });
+    }
+  }, [selectedYearIndex, egetKapitalForandring]);
 
   const selectedFY = sieData.fiscalYears.find(fy => fy.index === selectedYearIndex);
   const fiscalYearLabel = selectedFY ? formatFiscalYear(selectedFY) : '';
