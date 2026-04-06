@@ -1,6 +1,6 @@
 import { SieData } from '@/lib/sieParser';
 import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from '@/lib/k2Calculations';
-import { ReportData, Signatory } from '@/lib/k2Types';
+import { ReportData, Signatory, FlerarsOverride } from '@/lib/k2Types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
