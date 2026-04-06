@@ -24,6 +24,8 @@ interface ReportEditorProps {
   egetKapitalForandring: EgetKapitalForandring;
   skatteberakning: Skatteberakning;
   selectedYearIndex: number;
+  verModalOpen: boolean;
+  onVerModalOpenChange: (open: boolean) => void;
 }
 
 export function ReportEditor({
