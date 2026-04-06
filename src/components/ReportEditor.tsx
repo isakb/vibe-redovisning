@@ -1,13 +1,15 @@
 import { SieData } from '@/lib/sieParser';
 import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from '@/lib/k2Calculations';
-import { ReportData, Signatory, FlerarsOverride } from '@/lib/k2Types';
+import { ReportData, Signatory, FlerarsOverride, NoteAnlaggningstillgang } from '@/lib/k2Types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { FinancialTable } from './FinancialTable';
 import { TaxCalculationSection } from './TaxCalculationSection';
 
@@ -20,6 +22,7 @@ interface ReportEditorProps {
   flerarsOversikt: FlerarsOversikt;
   egetKapitalForandring: EgetKapitalForandring;
   skatteberakning: Skatteberakning;
+  selectedYearIndex: number;
 }
 
 export function ReportEditor({
@@ -31,8 +34,11 @@ export function ReportEditor({
   flerarsOversikt,
   egetKapitalForandring,
   skatteberakning,
+  selectedYearIndex,
 }: ReportEditorProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
+  const yi = selectedYearIndex;
+  const prevYI = selectedYearIndex - 1;
 
   const addSignatory = () => {
     update({ signatories: [...reportData.signatories, { name: '', role: 'Styrelseledamot' }] });
@@ -48,17 +54,58 @@ export function ReportEditor({
     update({ signatories: updated });
   };
 
-  const currentFY = sieData.fiscalYears.find(fy => fy.index === 0);
-  const prevFY = sieData.fiscalYears.find(fy => fy.index === -1);
+  const currentFY = sieData.fiscalYears.find(fy => fy.index === yi);
+  const prevFY = sieData.fiscalYears.find(fy => fy.index === prevYI);
+
+  // Balance verification
+  const totalA = balanceSheet.totalAssets[yi] || 0;
+  const totalEL = balanceSheet.totalEquityAndLiabilities[yi] || 0;
+  const balanceOk = Math.abs(totalA - totalEL) < 1;
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Balance warning */}
+      {!balanceOk && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Balansräkningen stämmer inte!</strong> Tillgångar ({formatSEK(totalA)}) ≠ Eget kapital och skulder ({formatSEK(totalEL)}). Differens: {formatSEK(totalA - totalEL)} kr.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Form toggle */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="font-semibold">Förkortad årsredovisning</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visar bruttoresultat istället för detaljerade intäkter/kostnader. Not om nettoomsättning blir obligatorisk.
+              </p>
+            </div>
+            <Switch
+              checked={reportData.useAbbreviatedForm}
+              onCheckedChange={(checked) => update({ useAbbreviatedForm: checked })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Förvaltningsberättelse */}
       <Card>
         <CardHeader>
           <CardTitle>Förvaltningsberättelse</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Bolagets säte</Label>
+            <Input
+              value={reportData.bolagetsSate}
+              onChange={e => update({ bolagetsSate: e.target.value })}
+              placeholder="Stockholm"
+            />
+          </div>
           <div className="space-y-2">
             <Label>Verksamhetsbeskrivning</Label>
             <Textarea
@@ -75,6 +122,14 @@ export function ReportEditor({
               onChange={e => update({ vasEntligaHandelser: e.target.value })}
               rows={3}
               placeholder="Beskriv väsentliga händelser..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Egna aktier</Label>
+            <Input
+              value={reportData.egnaAktier}
+              onChange={e => update({ egnaAktier: e.target.value })}
+              placeholder="Lämna tomt om inga egna aktier innehas"
             />
           </div>
         </CardContent>
@@ -115,15 +170,8 @@ export function ReportEditor({
                       const override = reportData.flerarsOverrides?.[y.index]?.[row.key];
                       const hasSieData = sieValue !== 0;
 
-                      // For soliditet: auto-calculate from merged balansomslutning + SIE equity
                       if (row.isSoliditet) {
-                        const mergedBalans = (reportData.flerarsOverrides?.[y.index]?.balansomslutning !== undefined
-                          ? reportData.flerarsOverrides[y.index].balansomslutning!
-                          : (flerarsOversikt.balansomslutning[y.index] || 0));
                         const mergedSoliditet = override !== undefined ? override : sieValue;
-                        // If balansomslutning was overridden but soliditet wasn't, and SIE soliditet is 0, show input
-                        const displayValue = mergedSoliditet;
-
                         if (hasSieData) {
                           return <td key={y.index} className="text-right py-2 px-3">{sieValue}%</td>;
                         }
@@ -199,10 +247,10 @@ export function ReportEditor({
                     <td className={`py-2 ${i === 0 || i === egetKapitalForandring.rows.length - 1 ? 'font-medium' : ''}`}>
                       {row.label}
                     </td>
-                    <td className="text-right py-2 px-3">{formatSEK(row.aktiekapital[0] || 0)}</td>
-                    <td className="text-right py-2 px-3">{formatSEK(row.balanserat[0] || 0)}</td>
-                    <td className="text-right py-2 px-3">{formatSEK(row.aretsResultat[0] || 0)}</td>
-                    <td className="text-right py-2 px-3 font-medium">{formatSEK(row.totalt[0] || 0)}</td>
+                    <td className="text-right py-2 px-3">{formatSEK(row.aktiekapital[yi] || 0)}</td>
+                    <td className="text-right py-2 px-3">{formatSEK(row.balanserat[yi] || 0)}</td>
+                    <td className="text-right py-2 px-3">{formatSEK(row.aretsResultat[yi] || 0)}</td>
+                    <td className="text-right py-2 px-3 font-medium">{formatSEK(row.totalt[yi] || 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -228,7 +276,7 @@ export function ReportEditor({
                 value={reportData.utdelning}
                 onChange={e => {
                   const utd = parseFloat(e.target.value) || 0;
-                  update({ utdelning: utd, tillBalanseratResultat: (incomeStatement.totalResult[0] || 0) - utd });
+                  update({ utdelning: utd, tillBalanseratResultat: (incomeStatement.totalResult[yi] || 0) - utd });
                 }}
               />
             </div>
@@ -254,8 +302,8 @@ export function ReportEditor({
           <FinancialTable
             sections={incomeStatement.sections}
             yearLabels={[
-              { index: 0, label: currentFY ? `${currentFY.startDate.slice(0,4)}/${currentFY.endDate.slice(0,4)}` : 'Nuvarande' },
-              { index: -1, label: prevFY ? `${prevFY.startDate.slice(0,4)}/${prevFY.endDate.slice(0,4)}` : 'Föregående' },
+              { index: yi, label: currentFY ? `${currentFY.startDate.slice(0,4)}/${currentFY.endDate.slice(0,4)}` : 'Nuvarande' },
+              { index: prevYI, label: prevFY ? `${prevFY.startDate.slice(0,4)}/${prevFY.endDate.slice(0,4)}` : 'Föregående' },
             ]}
           />
         </CardContent>
@@ -271,15 +319,15 @@ export function ReportEditor({
           <FinancialTable
             sections={balanceSheet.assets}
             yearLabels={[
-              { index: 0, label: currentFY ? `${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}` : 'Nuvarande' },
-              { index: -1, label: prevFY ? `${prevFY.endDate.slice(0,4)}-${prevFY.endDate.slice(4,6)}-${prevFY.endDate.slice(6,8)}` : 'Föregående' },
+              { index: yi, label: currentFY ? `${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}` : 'Nuvarande' },
+              { index: prevYI, label: prevFY ? `${prevFY.endDate.slice(0,4)}-${prevFY.endDate.slice(4,6)}-${prevFY.endDate.slice(6,8)}` : 'Föregående' },
             ]}
           />
           <div className="flex justify-between font-bold border-t-2 border-foreground pt-2 mt-2">
             <span>SUMMA TILLGÅNGAR</span>
             <div className="flex gap-8">
-              <span>{formatSEK(balanceSheet.totalAssets[0] || 0)}</span>
-              <span>{formatSEK(balanceSheet.totalAssets[-1] || 0)}</span>
+              <span>{formatSEK(balanceSheet.totalAssets[yi] || 0)}</span>
+              <span>{formatSEK(balanceSheet.totalAssets[prevYI] || 0)}</span>
             </div>
           </div>
 
@@ -289,15 +337,15 @@ export function ReportEditor({
           <FinancialTable
             sections={balanceSheet.equityAndLiabilities}
             yearLabels={[
-              { index: 0, label: 'Nuvarande' },
-              { index: -1, label: 'Föregående' },
+              { index: yi, label: 'Nuvarande' },
+              { index: prevYI, label: 'Föregående' },
             ]}
           />
           <div className="flex justify-between font-bold border-t-2 border-foreground pt-2 mt-2">
             <span>SUMMA EGET KAPITAL OCH SKULDER</span>
             <div className="flex gap-8">
-              <span>{formatSEK(balanceSheet.totalEquityAndLiabilities[0] || 0)}</span>
-              <span>{formatSEK(balanceSheet.totalEquityAndLiabilities[-1] || 0)}</span>
+              <span>{formatSEK(balanceSheet.totalEquityAndLiabilities[yi] || 0)}</span>
+              <span>{formatSEK(balanceSheet.totalEquityAndLiabilities[prevYI] || 0)}</span>
             </div>
           </div>
         </CardContent>
@@ -331,6 +379,52 @@ export function ReportEditor({
               value={reportData.medeltalAnstallda}
               onChange={e => update({ medeltalAnstallda: e.target.value })}
               placeholder="0"
+            />
+          </div>
+          <Separator />
+
+          {reportData.useAbbreviatedForm && (
+            <>
+              <div className="space-y-2">
+                <Label className="font-semibold">Not 3 – Nettoomsättning (obligatorisk vid förkortad form)</Label>
+                <Textarea
+                  value={reportData.noteNettoomsattning}
+                  onChange={e => update({ noteNettoomsattning: e.target.value })}
+                  rows={3}
+                  placeholder="Beskriv nettoomsättningens fördelning..."
+                />
+              </div>
+              <Separator />
+            </>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Avskrivningsgrunder</Label>
+            <Textarea
+              value={reportData.noteAvskrivningsgrunder}
+              onChange={e => update({ noteAvskrivningsgrunder: e.target.value })}
+              rows={2}
+              placeholder="T.ex. Inventarier skrivs av linjärt över 5 år"
+            />
+          </div>
+          <Separator />
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Ställda säkerheter</Label>
+            <Input
+              value={reportData.stalldaSakerheter}
+              onChange={e => update({ stalldaSakerheter: e.target.value })}
+              placeholder="Inga"
+            />
+          </div>
+          <Separator />
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Eventualförpliktelser</Label>
+            <Input
+              value={reportData.eventualforpliktelser}
+              onChange={e => update({ eventualforpliktelser: e.target.value })}
+              placeholder="Inga"
             />
           </div>
         </CardContent>

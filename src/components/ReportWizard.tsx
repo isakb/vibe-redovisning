@@ -98,6 +98,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
         egetKapitalForandring,
         fiscalYears: sieData.fiscalYears,
         selectedYearIndex,
+        skatteberakning,
       });
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -176,6 +177,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
               skatteberakning={skatteberakning}
+              selectedYearIndex={selectedYearIndex}
             />
           </TabsContent>
           
@@ -190,6 +192,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               egetKapitalForandring={egetKapitalForandring}
               fiscalYears={sieData.fiscalYears}
               skatteberakning={skatteberakning}
+              selectedYearIndex={selectedYearIndex}
             />
           </TabsContent>
         </Tabs>

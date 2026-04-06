@@ -18,6 +18,7 @@ const Index = () => {
       verksamhetsbeskrivning: 'Bolaget bedriver konsultverksamhet inom IT och teknik.',
       signatories: [{ name: '', role: 'Styrelseledamot' }],
       plats: '',
+      bolagetsSate: '',
     };
     if (!existing) saveCompanyProfile(profile);
     setCompanyProfile(profile);

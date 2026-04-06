@@ -19,6 +19,8 @@ export interface K2Section {
 export interface K2IncomeStatement {
   sections: K2Section[];
   totalResult: Record<number, number>;
+  // Abbreviated form: bruttoresultat
+  bruttoresultat?: Record<number, number>;
 }
 
 export interface K2BalanceSheet {
@@ -114,11 +116,22 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
 
   const resultatEfterFinansiella = sumAmounts(rorelseresultat, summaFinansiellt);
 
+  // Bokslutsdispositioner (8800-8899)
+  const bokslutsdispositioner = amounts(8800, 8899);
+
+  // Resultat före skatt
+  const resultatForeSkatt = sumAmounts(resultatEfterFinansiella, bokslutsdispositioner);
+
   // Skatt
   const skatt = amounts(8900, 8989);
   
   // Årets resultat
-  const aretsResultat = sumAmounts(resultatEfterFinansiella, skatt);
+  const aretsResultat = sumAmounts(resultatForeSkatt, skatt);
+
+  // Bruttoresultat for abbreviated form = nettoomsättning + handelsvaror
+  const bruttoresultat = sumAmounts(nettoomsattning, handelsvaror);
+
+  const hasBokslutsdispositioner = yearIndices.some(yi => (bokslutsdispositioner[yi] || 0) !== 0);
 
   const sections: K2Section[] = [
     {
@@ -158,13 +171,15 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
       title: '',
       items: [
         { label: 'Resultat efter finansiella poster', amounts: resultatEfterFinansiella, isBold: true },
+        ...(hasBokslutsdispositioner ? [{ label: 'Bokslutsdispositioner', amounts: bokslutsdispositioner }] : []),
+        ...(hasBokslutsdispositioner ? [{ label: 'Resultat före skatt', amounts: resultatForeSkatt, isBold: true }] : []),
         { label: 'Skatt på årets resultat', amounts: skatt },
         { label: 'Årets resultat', amounts: aretsResultat, isBold: true },
       ],
     },
   ];
 
-  return { sections, totalResult: aretsResultat };
+  return { sections, totalResult: aretsResultat, bruttoresultat };
 }
 
 export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2BalanceSheet {
@@ -195,7 +210,6 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
   // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
   const kortfristigaFordringar = amounts(1500, 1899);
-  const kpiKortPlac = amounts(1800, 1899); // Already included above if needed
   const kassaBank = amounts(1900, 1999);
   const summaOmsattning = sumAmounts(varulager, kortfristigaFordringar, kassaBank);
 
@@ -208,14 +222,25 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
   const aretsResultatEK = amounts(2099, 2099);
   const summaEgetKapital = sumAmounts(aktiekapital, balanserat, aretsResultatEK);
 
-  // Långfristiga skulder
-  const langfristigaSkulder = amounts(2100, 2399);
+  // Obeskattade reserver (2100-2149)
+  const obeskatadeReserver = amounts(2100, 2149);
+
+  // Avsättningar (2200-2299)
+  const avsattningar = amounts(2200, 2299);
+
+  // Långfristiga skulder (2300-2399 — was 2100-2399, now remapped)
+  const langfristigaSkulder = amounts(2150, 2199); // remaining 2150-2199 if any
+  const langfristigaSkulder2 = amounts(2300, 2399);
+  const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
 
   // Kortfristiga skulder
   const kortfristigaSkulder = amounts(2400, 2999);
 
-  const summaSkulder = sumAmounts(langfristigaSkulder, kortfristigaSkulder);
-  const summaEKochSkulder = sumAmounts(summaEgetKapital, summaSkulder);
+  const summaSkulder = sumAmounts(summaLangfristiga, kortfristigaSkulder);
+  const summaEKochSkulder = sumAmounts(summaEgetKapital, obeskatadeReserver, avsattningar, summaSkulder);
+
+  const hasObeskatade = yearIndices.some(yi => (obeskatadeReserver[yi] || 0) !== 0);
+  const hasAvsattningar = yearIndices.some(yi => (avsattningar[yi] || 0) !== 0);
 
   const assets: K2Section[] = [
     {
@@ -248,10 +273,22 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
         { label: 'Summa eget kapital', amounts: summaEgetKapital, isBold: true, isSubtotal: true },
       ],
     },
+    ...(hasObeskatade ? [{
+      title: 'Obeskattade reserver',
+      items: [
+        { label: 'Obeskattade reserver', amounts: obeskatadeReserver, indent: 1 },
+      ],
+    }] : []),
+    ...(hasAvsattningar ? [{
+      title: 'Avsättningar',
+      items: [
+        { label: 'Avsättningar', amounts: avsattningar, indent: 1 },
+      ],
+    }] : []),
     {
       title: 'Skulder',
       items: [
-        { label: 'Långfristiga skulder', amounts: langfristigaSkulder, indent: 1 },
+        { label: 'Långfristiga skulder', amounts: summaLangfristiga, indent: 1 },
         { label: 'Kortfristiga skulder', amounts: kortfristigaSkulder, indent: 1 },
         { label: 'Summa skulder', amounts: summaSkulder, isBold: true, isSubtotal: true },
       ],
@@ -419,13 +456,9 @@ export function calculateSkatteberakning(
   sieData: SieData,
   selectedYearIndex: number
 ): Skatteberakning {
-  // Resultat efter finansiella poster = totalResult before tax
-  // We need to recalculate: totalResult includes tax line already
-  // Resultat före skatt = rörelseresultat + finansiellt (i.e. totalResult + skatt amounts back)
   const res = sieData.results;
   const skattFromSIE = -sumRange(res, selectedYearIndex, 8900, 8989);
   const totalResultInclTax = incomeStatement.totalResult[selectedYearIndex] || 0;
-  // totalResult = resultatEfterFinansiella + skatt, so resultatForeSkatt = totalResult - skatt
   const resultatForeSkatt = totalResultInclTax - skattFromSIE;
 
   const ejAvdragsgilla = reportData.ejAvdragsgillaPoster || 0;
@@ -435,12 +468,11 @@ export function calculateSkatteberakning(
   const skattPaAretsResultat = skattemassigResultat > 0 ? Math.round(skattemassigResultat * skattesats) : 0;
   const aretsResultat = resultatForeSkatt - skattPaAretsResultat;
 
-  // Check if tax booking already exists (konto 8910 or 2512 has balance)
+  // Check if tax booking already exists
   const konto8910 = sumRange(res, selectedYearIndex, 8910, 8910);
   const konto2512 = sumRange(sieData.closingBalances, selectedYearIndex, 2512, 2512);
   const saknarSkattebokning = konto8910 === 0 && konto2512 === 0;
 
-  // Fiscal year end date for bokföringsdatum
   const fy = sieData.fiscalYears.find(f => f.index === selectedYearIndex);
   const bokforingsdatum = fy ? formatDate(fy.endDate) : '';
 
