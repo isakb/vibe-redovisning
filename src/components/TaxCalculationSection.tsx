@@ -168,7 +168,7 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
           <>
             <Separator />
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => setModalOpen(true)}>
+              <Button variant="outline" onClick={() => onModalOpenChange(true)}>
                 <FileText className="h-4 w-4 mr-1" />
                 Visa bokföringsförslag
               </Button>
@@ -181,12 +181,13 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
             </div>
             <VerificationModal
               open={modalOpen}
-              onOpenChange={setModalOpen}
+              onOpenChange={onModalOpenChange}
               skatteberakning={s}
               company={company}
               fiscalYear={fiscalYear}
               onAccept={() => update({ verifikationerGodkanda: true })}
               accepted={reportData.verifikationerGodkanda}
+              utdelning={reportData.utdelning}
             />
           </>
         )}
