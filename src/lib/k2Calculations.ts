@@ -388,3 +388,79 @@ export function formatDate(dateStr: string): string {
   if (!dateStr || dateStr.length !== 8) return dateStr;
   return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 }
+
+// Skatteberäkning
+
+export interface Verifikationsrad {
+  konto: string;
+  kontonamn: string;
+  debit: number;
+  kredit: number;
+}
+
+export interface Skatteberakning {
+  resultatForeSkatt: number;
+  ejAvdragsgillaPoster: number;
+  skattemassigResultat: number;
+  skattesats: number;
+  skattPaAretsResultat: number;
+  aretsResultat: number;
+  saknarSkattebokning: boolean;
+  skatteverifikation: Verifikationsrad[];
+  resultatverifikation: Verifikationsrad[];
+  bokforingsdatum: string;
+}
+
+export function calculateSkatteberakning(
+  incomeStatement: K2IncomeStatement,
+  reportData: ReportData,
+  sieData: SieData,
+  selectedYearIndex: number
+): Skatteberakning {
+  // Resultat efter finansiella poster = totalResult before tax
+  // We need to recalculate: totalResult includes tax line already
+  // Resultat före skatt = rörelseresultat + finansiellt (i.e. totalResult + skatt amounts back)
+  const res = sieData.results;
+  const skattFromSIE = -sumRange(res, selectedYearIndex, 8900, 8989);
+  const totalResultInclTax = incomeStatement.totalResult[selectedYearIndex] || 0;
+  // totalResult = resultatEfterFinansiella + skatt, so resultatForeSkatt = totalResult - skatt
+  const resultatForeSkatt = totalResultInclTax - skattFromSIE;
+
+  const ejAvdragsgilla = reportData.ejAvdragsgillaPoster || 0;
+  const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla;
+  const skattesats = reportData.skattesats / 100;
+  const skattPaAretsResultat = skattemassigResultat > 0 ? Math.round(skattemassigResultat * skattesats) : 0;
+  const aretsResultat = resultatForeSkatt - skattPaAretsResultat;
+
+  // Check if tax booking already exists (konto 8910 or 2512 has balance)
+  const konto8910 = sumRange(res, selectedYearIndex, 8910, 8910);
+  const konto2512 = sumRange(sieData.closingBalances, selectedYearIndex, 2512, 2512);
+  const saknarSkattebokning = konto8910 === 0 && konto2512 === 0;
+
+  // Fiscal year end date for bokföringsdatum
+  const fy = sieData.fiscalYears.find(f => f.index === selectedYearIndex);
+  const bokforingsdatum = fy ? formatDate(fy.endDate) : '';
+
+  const skatteverifikation: Verifikationsrad[] = [
+    { konto: '2512', kontonamn: 'Beräknad inkomstskatt', debit: skattPaAretsResultat, kredit: 0 },
+    { konto: '8910', kontonamn: 'Skatt som belastar årets resultat', debit: 0, kredit: skattPaAretsResultat },
+  ];
+
+  const resultatverifikation: Verifikationsrad[] = [
+    { konto: '2099', kontonamn: 'Årets resultat', debit: aretsResultat > 0 ? 0 : Math.abs(aretsResultat), kredit: aretsResultat > 0 ? aretsResultat : 0 },
+    { konto: '8999', kontonamn: 'Årets resultat', debit: aretsResultat > 0 ? aretsResultat : 0, kredit: aretsResultat > 0 ? 0 : Math.abs(aretsResultat) },
+  ];
+
+  return {
+    resultatForeSkatt,
+    ejAvdragsgillaPoster: ejAvdragsgilla,
+    skattemassigResultat,
+    skattesats: reportData.skattesats,
+    skattPaAretsResultat,
+    aretsResultat,
+    saknarSkattebokning,
+    skatteverifikation,
+    resultatverifikation,
+    bokforingsdatum,
+  };
+}
