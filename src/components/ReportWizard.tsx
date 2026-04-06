@@ -29,8 +29,6 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
   const incomeStatement = useMemo(() => calculateIncomeStatement(sieData, yearIndices), [sieData, selectedYearIndex]);
   const balanceSheet = useMemo(() => calculateBalanceSheet(sieData, yearIndices), [sieData, selectedYearIndex]);
   const flerarsOversikt = useMemo(() => calculateFlerarsOversikt(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
-  const egetKapitalForandring = useMemo(() => calculateEgetKapitalForandring(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
-
   const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
   
   const [reportData, setReportData] = useState<ReportData>(
@@ -40,6 +38,16 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
   const skatteberakning = useMemo(
     () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
     [incomeStatement, reportData, sieData, selectedYearIndex]
+  );
+
+  // Pass skatteberäkning's årets resultat as override when tax booking is missing
+  const egetKapitalForandring = useMemo(
+    () => calculateEgetKapitalForandring(
+      sieData,
+      selectedYearIndex,
+      skatteberakning.saknarSkattebokning ? skatteberakning.aretsResultat : undefined
+    ),
+    [sieData, selectedYearIndex, skatteberakning]
   );
 
   const selectedFY = sieData.fiscalYears.find(fy => fy.index === selectedYearIndex);
