@@ -77,23 +77,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {sortedYears.length > 1 && (
-              <Select
-                value={String(selectedYearIndex)}
-                onValueChange={(v) => setSelectedYearIndex(Number(v))}
-              >
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortedYears.map(fy => (
-                    <SelectItem key={fy.index} value={String(fy.index)}>
-                      {formatFiscalYear(fy)}{fy.index === sortedYears[0].index ? ' (senaste)' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            
             <Button onClick={handleExportPDF}>
               <Download className="h-4 w-4 mr-2" />
               Exportera PDF
