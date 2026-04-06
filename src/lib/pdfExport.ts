@@ -382,57 +382,8 @@ export function generatePDF(options: PDFExportOptions) {
     });
     y = (doc.lastAutoTable?.finalY ?? y) + 8;
 
-    // Verifikationsförslag - Skatt
-    checkNewPage(40);
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text('Förslag på verifikation — Skatt', margin, y);
-    y += 4;
 
-    autoTable(doc, {
-      startY: y,
-      head: [['Konto', 'Kontonamn', 'Debit', 'Kredit']],
-      body: skatteberakning.skatteverifikation.map(r => [
-        r.konto, r.kontonamn,
-        r.debit > 0 ? formatSEK(r.debit) : '',
-        r.kredit > 0 ? formatSEK(r.kredit) : '',
-      ]),
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-      theme: 'grid',
-    });
-    y = (doc.lastAutoTable?.finalY ?? y) + 3;
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(`Bokföringsdatum ${skatteberakning.bokforingsdatum}`, margin, y);
-    y += 8;
 
-    // Verifikationsförslag - Årets resultat
-    checkNewPage(40);
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text('Förslag på verifikation — Årets resultat', margin, y);
-    y += 4;
-
-    autoTable(doc, {
-      startY: y,
-      head: [['Konto', 'Kontonamn', 'Debit', 'Kredit']],
-      body: skatteberakning.resultatverifikation.map(r => [
-        r.konto, r.kontonamn,
-        r.debit > 0 ? formatSEK(r.debit) : '',
-        r.kredit > 0 ? formatSEK(r.kredit) : '',
-      ]),
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-      theme: 'grid',
-    });
-    y = (doc.lastAutoTable?.finalY ?? y) + 3;
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(`Bokföringsdatum ${skatteberakning.bokforingsdatum}`, margin, y);
-    y += 8;
 
     addFooter(doc.getNumberOfPages());
   }
