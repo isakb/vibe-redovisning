@@ -12,6 +12,7 @@ interface ReportPreviewProps {
   flerarsOversikt: FlerarsOversikt;
   egetKapitalForandring: EgetKapitalForandring;
   fiscalYears: SieFiscalYear[];
+  skatteberakning: Skatteberakning;
 }
 
 export function ReportPreview({
