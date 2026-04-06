@@ -14,6 +14,7 @@ interface VerificationModalProps {
   fiscalYear: string;
   onAccept: () => void;
   accepted: boolean;
+  utdelning?: number;
 }
 
 export function VerificationModal({
