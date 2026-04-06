@@ -114,6 +114,9 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   // Finansiella poster
   const finansiellaIntakter = amounts(8000, 8399);
   const finansiellaKostnader = amounts(8400, 8699);
+  // Extraordinära poster (8700-8799)
+  const extraordinaraPoster = amounts(8700, 8799);
+  const hasExtraordinara = yearIndices.some(yi => (extraordinaraPoster[yi] || 0) !== 0);
   const summaFinansiellt = sumAmounts(finansiellaIntakter, finansiellaKostnader);
 
   const resultatEfterFinansiella = sumAmounts(rorelseresultat, summaFinansiellt);
