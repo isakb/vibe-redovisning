@@ -1,28 +1,59 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { SieData } from '@/lib/sieParser';
 import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, calculateSkatteberakning, formatFiscalYear } from '@/lib/k2Calculations';
-import { ReportData, createDefaultReportData } from '@/lib/k2Types';
+import { ReportData, CompanyProfile, createDefaultReportData, saveCompanyProfile, saveYearReports } from '@/lib/k2Types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Button } from '@/components/ui/button';
 import { ReportEditor } from './ReportEditor';
 import { ReportPreview } from './ReportPreview';
+import { CompanyProfileEditor } from './CompanyProfile';
 import { generatePDF } from '@/lib/pdfExport';
 import { Download, Eye, Edit, ArrowLeft } from 'lucide-react';
 
 interface ReportWizardProps {
   sieData: SieData;
+  companyProfile: CompanyProfile;
+  onCompanyProfileChange: (profile: CompanyProfile) => void;
+  savedReports: Record<number, ReportData>;
   onReset: () => void;
 }
 
-export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
-  const selectedYearIndex = useMemo(() => {
-    const sorted = [...sieData.fiscalYears].sort((a, b) => b.index - a.index);
-    return sorted[0]?.index ?? 0;
-  }, [sieData.fiscalYears]);
+export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, savedReports, onReset }: ReportWizardProps) {
+  const sortedYears = useMemo(() => 
+    [...sieData.fiscalYears].sort((a, b) => b.index - a.index), 
+    [sieData.fiscalYears]
+  );
 
+  const [selectedYearIndex, setSelectedYearIndex] = useState(() => sortedYears[0]?.index ?? 0);
   const [activeTab, setActiveTab] = useState('edit');
+
+  // Per-year report data
+  const [yearReports, setYearReports] = useState<Record<number, ReportData>>(() => {
+    const reports: Record<number, ReportData> = {};
+    for (const fy of sortedYears) {
+      reports[fy.index] = savedReports[fy.index] || createDefaultReportData(0, companyProfile);
+    }
+    return reports;
+  });
+
+  const reportData = yearReports[selectedYearIndex] || createDefaultReportData(0, companyProfile);
+
+  const setReportData = useCallback((data: ReportData) => {
+    setYearReports(prev => ({ ...prev, [selectedYearIndex]: data }));
+  }, [selectedYearIndex]);
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    saveYearReports(sieData.company.orgNumber, yearReports);
+  }, [yearReports, sieData.company.orgNumber]);
+
+  const handleProfileChange = useCallback((profile: CompanyProfile) => {
+    saveCompanyProfile(profile);
+    onCompanyProfileChange(profile);
+  }, [onCompanyProfileChange]);
 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
   
@@ -30,17 +61,19 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
   const balanceSheet = useMemo(() => calculateBalanceSheet(sieData, yearIndices), [sieData, selectedYearIndex]);
   const flerarsOversikt = useMemo(() => calculateFlerarsOversikt(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
   const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
-  
-  const [reportData, setReportData] = useState<ReportData>(
-    createDefaultReportData(aretsResultat)
-  );
+
+  // Update tillBalanseratResultat when year changes
+  useEffect(() => {
+    if (reportData.tillBalanseratResultat === 0 && aretsResultat !== 0) {
+      setReportData({ ...reportData, tillBalanseratResultat: aretsResultat });
+    }
+  }, [selectedYearIndex, aretsResultat]);
 
   const skatteberakning = useMemo(
     () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
     [incomeStatement, reportData, sieData, selectedYearIndex]
   );
 
-  // Pass skatteberäkning's årets resultat as override when tax booking is missing
   const egetKapitalForandring = useMemo(
     () => calculateEgetKapitalForandring(
       sieData,
@@ -85,12 +118,32 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
             <div>
               <h1 className="text-lg font-semibold text-foreground">{sieData.company.name}</h1>
               <p className="text-sm text-muted-foreground">
-                Org.nr {sieData.company.orgNumber} | Räkenskapsår {fiscalYearLabel}
+                Org.nr {sieData.company.orgNumber}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            
+            {sortedYears.length > 1 && (
+              <Select
+                value={String(selectedYearIndex)}
+                onValueChange={v => setSelectedYearIndex(Number(v))}
+              >
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortedYears.map(fy => (
+                    <SelectItem key={fy.index} value={String(fy.index)}>
+                      {formatFiscalYear(fy)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <CompanyProfileEditor
+              profile={companyProfile}
+              onChange={handleProfileChange}
+            />
             <Button onClick={handleExportPDF}>
               <Download className="h-4 w-4 mr-2" />
               Exportera PDF
