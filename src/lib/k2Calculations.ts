@@ -30,12 +30,21 @@ export interface K2BalanceSheet {
   totalEquityAndLiabilities: Record<number, number>;
 }
 
+export interface SoliditetBreakdown {
+  egetKapital: number;
+  obeskatadeReserver: number;
+  justeratEK: number;
+  totalAssets: number;
+  taxReceivable: number;
+}
+
 export interface FlerarsOversikt {
   years: { index: number; label: string }[];
   nettoomsattning: Record<number, number>;
   resultatEfterFinansiellaPoster: Record<number, number>;
   balansomslutning: Record<number, number>;
-  soliditet: Record<number, number>; // percentage
+  soliditet: Record<number, number>;
+  soliditetBreakdown: Record<number, SoliditetBreakdown>;
 }
 
 export interface EgetKapitalChange {
