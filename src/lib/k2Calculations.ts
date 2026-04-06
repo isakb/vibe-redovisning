@@ -143,6 +143,7 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
       title: 'Rörelseintäkter, lagerförändringar m.m.',
       items: [
         { label: 'Nettoomsättning', amounts: nettoomsattning },
+        ...(hasAktiveratArbete ? [{ label: 'Aktiverat arbete för egen räkning', amounts: aktiveratArbete }] : []),
         { label: 'Övriga rörelseintäkter', amounts: ovrigaRorelseintakter },
         { label: 'Summa rörelseintäkter, lagerförändringar m.m.', amounts: summaRorelseintakter, isBold: true, isSubtotal: true },
       ],
