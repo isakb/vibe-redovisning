@@ -4,7 +4,7 @@ import { SieData } from '@/lib/sieParser';
 import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, formatFiscalYear } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Button } from '@/components/ui/button';
 import { ReportEditor } from './ReportEditor';
 import { ReportPreview } from './ReportPreview';
@@ -17,12 +17,11 @@ interface ReportWizardProps {
 }
 
 export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
-  const sortedYears = useMemo(() => 
-    [...sieData.fiscalYears].sort((a, b) => b.index - a.index), 
-    [sieData.fiscalYears]
-  );
+  const selectedYearIndex = useMemo(() => {
+    const sorted = [...sieData.fiscalYears].sort((a, b) => b.index - a.index);
+    return sorted[0]?.index ?? 0;
+  }, [sieData.fiscalYears]);
 
-  const [selectedYearIndex, setSelectedYearIndex] = useState(sortedYears[0]?.index ?? 0);
   const [activeTab, setActiveTab] = useState('edit');
 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
@@ -78,23 +77,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {sortedYears.length > 1 && (
-              <Select
-                value={String(selectedYearIndex)}
-                onValueChange={(v) => setSelectedYearIndex(Number(v))}
-              >
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortedYears.map(fy => (
-                    <SelectItem key={fy.index} value={String(fy.index)}>
-                      {formatFiscalYear(fy)}{fy.index === sortedYears[0].index ? ' (senaste)' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            
             <Button onClick={handleExportPDF}>
               <Download className="h-4 w-4 mr-2" />
               Exportera PDF
