@@ -96,8 +96,10 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
 
   // Rörelseintäkter
   const nettoomsattning = amounts(3000, 3799);
+  const aktiveratArbete = amounts(3800, 3899);
   const ovrigaRorelseintakter = amounts(3900, 3999);
-  const summaRorelseintakter = sumAmounts(nettoomsattning, ovrigaRorelseintakter);
+  const hasAktiveratArbete = yearIndices.some(yi => (aktiveratArbete[yi] || 0) !== 0);
+  const summaRorelseintakter = sumAmounts(nettoomsattning, aktiveratArbete, ovrigaRorelseintakter);
 
   // Rörelsekostnader (these are costs, so they're positive in SIE = negative for display)
   const handelsvaror = amounts(4000, 4999);
@@ -112,6 +114,9 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   // Finansiella poster
   const finansiellaIntakter = amounts(8000, 8399);
   const finansiellaKostnader = amounts(8400, 8699);
+  // Extraordinära poster (8700-8799)
+  const extraordinaraPoster = amounts(8700, 8799);
+  const hasExtraordinara = yearIndices.some(yi => (extraordinaraPoster[yi] || 0) !== 0);
   const summaFinansiellt = sumAmounts(finansiellaIntakter, finansiellaKostnader);
 
   const resultatEfterFinansiella = sumAmounts(rorelseresultat, summaFinansiellt);
@@ -120,7 +125,7 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   const bokslutsdispositioner = amounts(8800, 8899);
 
   // Resultat före skatt
-  const resultatForeSkatt = sumAmounts(resultatEfterFinansiella, bokslutsdispositioner);
+  const resultatForeSkatt = sumAmounts(resultatEfterFinansiella, extraordinaraPoster, bokslutsdispositioner);
 
   // Skatt
   const skatt = amounts(8900, 8989);
@@ -138,6 +143,7 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
       title: 'Rörelseintäkter, lagerförändringar m.m.',
       items: [
         { label: 'Nettoomsättning', amounts: nettoomsattning },
+        ...(hasAktiveratArbete ? [{ label: 'Aktiverat arbete för egen räkning', amounts: aktiveratArbete }] : []),
         { label: 'Övriga rörelseintäkter', amounts: ovrigaRorelseintakter },
         { label: 'Summa rörelseintäkter, lagerförändringar m.m.', amounts: summaRorelseintakter, isBold: true, isSubtotal: true },
       ],
@@ -171,8 +177,9 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
       title: '',
       items: [
         { label: 'Resultat efter finansiella poster', amounts: resultatEfterFinansiella, isBold: true },
+        ...(hasExtraordinara ? [{ label: 'Extraordinära poster', amounts: extraordinaraPoster }] : []),
         ...(hasBokslutsdispositioner ? [{ label: 'Bokslutsdispositioner', amounts: bokslutsdispositioner }] : []),
-        ...(hasBokslutsdispositioner ? [{ label: 'Resultat före skatt', amounts: resultatForeSkatt, isBold: true }] : []),
+        ...(hasBokslutsdispositioner || hasExtraordinara ? [{ label: 'Resultat före skatt', amounts: resultatForeSkatt, isBold: true }] : []),
         { label: 'Skatt på årets resultat', amounts: skatt },
         { label: 'Årets resultat', amounts: aretsResultat, isBold: true },
       ],
@@ -218,8 +225,11 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
   const kortfristigaFordringar = amounts(1500, 1899);
+  // Account 2518 (betald F-skatt) is a debit account = tax receivable, classify as asset
+  const skattefordran2518 = amounts(2518, 2518);
+  const summaKortfristigaFordringar = sumAmounts(kortfristigaFordringar, skattefordran2518);
   const kassaBank = amounts(1900, 1999);
-  const summaOmsattning = sumAmounts(varulager, kortfristigaFordringar, kassaBank);
+  const summaOmsattning = sumAmounts(varulager, summaKortfristigaFordringar, kassaBank);
 
   const summaTillgangar = sumAmounts(summaAnlaggning, summaOmsattning);
 
@@ -237,25 +247,22 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   }
   const summaEgetKapital = sumAmounts(aktiekapital, balanserat, aretsResultatEK);
 
-  // Obeskattade reserver (2100-2149)
-  const obeskatadeReserver = amountsNeg(2100, 2149);
+  // Obeskattade reserver (2100-2199, includes 2150 ackumulerade överavskrivningar etc.)
+  const obeskatadeReserver = amountsNeg(2100, 2199);
 
   // Avsättningar (2200-2299)
   const avsattningar = amountsNeg(2200, 2299);
 
-  // Långfristiga skulder (2300-2399 — was 2100-2399, now remapped)
-  const langfristigaSkulder = amountsNeg(2150, 2199);
-  const langfristigaSkulder2 = amountsNeg(2300, 2399);
-  const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
+  // Långfristiga skulder (2300-2399)
+  const summaLangfristiga = amountsNeg(2300, 2399);
 
-  // Kortfristiga skulder
-  const kortfristigaSkulder = amountsNeg(2400, 2999);
-  // Inject calculated skatteskuld when tax bookings are missing from SIE
-  if (taxAdjustment) {
-    const yi = yearIndices[0];
-    if (yi !== undefined) {
-      kortfristigaSkulder[yi] = (kortfristigaSkulder[yi] || 0) + taxAdjustment.skatteskuld;
-    }
+  // Kortfristiga skulder (2400-2999, excluding 2518 which is reclassified as asset)
+  const kortfristigaSkulderRaw = amountsNeg(2400, 2999);
+  // Remove 2518 from liabilities (it was negated by amountsNeg, so add back the raw value)
+  const skattefordran2518Neg = amountsNeg(2518, 2518);
+  const kortfristigaSkulder: Record<number, number> = {};
+  for (const yi of yearIndices) {
+    kortfristigaSkulder[yi] = (kortfristigaSkulderRaw[yi] || 0) - (skattefordran2518Neg[yi] || 0);
   }
   // Inject calculated skatteskuld when tax bookings are missing from SIE
   if (taxAdjustment) {
@@ -285,7 +292,7 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
       title: 'Omsättningstillgångar',
       items: [
         { label: 'Varulager m.m.', amounts: varulager, indent: 1 },
-        { label: 'Kortfristiga fordringar', amounts: kortfristigaFordringar, indent: 1 },
+        { label: 'Kortfristiga fordringar', amounts: summaKortfristigaFordringar, indent: 1 },
         { label: 'Kassa och bank', amounts: kassaBank, indent: 1 },
         { label: 'Summa omsättningstillgångar', amounts: summaOmsattning, isBold: true, isSubtotal: true },
       ],
@@ -364,14 +371,14 @@ export function calculateFlerarsOversikt(
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar (1000-1999)
-    const totalAssets = sumRange(ub, yi, 1000, 1999);
+    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran 2518
+    const totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
     balansomslutning[yi] = totalAssets;
 
     // Soliditet = justerat eget kapital / balansomslutning × 100
     // Justerat EK = EK + (1 - skattesats) × obeskattade reserver
     let egetKapital = -sumRange(ub, yi, 2080, 2099);
-    const obeskatadeReserver = -sumRange(ub, yi, 2100, 2149);
+    const obeskatadeReserver = -sumRange(ub, yi, 2100, 2199);
     
     // For current year with tax adjustment, add calculated årets resultat to EK
     if (yi === selectedYearIndex && taxAdjustment) {
