@@ -30,6 +30,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
 
   const [selectedYearIndex, setSelectedYearIndex] = useState(() => sortedYears[0]?.index ?? 0);
   const [activeTab, setActiveTab] = useState('edit');
+  const [verModalOpen, setVerModalOpen] = useState(false);
 
   // Per-year report data
   const [yearReports, setYearReports] = useState<Record<number, ReportData>>(() => {
