@@ -217,7 +217,10 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
 
   // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
-  const kortfristigaFordringar = amounts(1500, 1899);
+  const kortfristigaFordringarRaw = amounts(1500, 1899);
+  // Account 2518 (betald F-skatt) is a current receivable, not a liability
+  const skattefordran = amounts(2518, 2518);
+  const kortfristigaFordringar = sumAmounts(kortfristigaFordringarRaw, skattefordran);
   const kassaBank = amounts(1900, 1999);
   const summaOmsattning = sumAmounts(varulager, kortfristigaFordringar, kassaBank);
 
