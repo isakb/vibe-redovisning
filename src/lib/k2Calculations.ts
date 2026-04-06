@@ -331,7 +331,11 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   };
 }
 
-export function calculateFlerarsOversikt(data: SieData, selectedYearIndex: number = 0): FlerarsOversikt {
+export function calculateFlerarsOversikt(
+  data: SieData,
+  selectedYearIndex: number = 0,
+  taxAdjustment?: { aretsResultat: number; skatteskuld: number }
+): FlerarsOversikt {
   // Show up to 4 years ending at the selected year
   const years = data.fiscalYears
     .filter(fy => fy.index <= selectedYearIndex && fy.index >= selectedYearIndex - 3)
@@ -359,14 +363,28 @@ export function calculateFlerarsOversikt(data: SieData, selectedYearIndex: numbe
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar
-    balansomslutning[yi] = sumRange(ub, yi, 1000, 1999);
+    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran (2518, positive = asset)
+    let totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
+    
+    // For current year, add tax adjustment to assets (skattefordran from calculated tax)
+    if (yi === selectedYearIndex && taxAdjustment) {
+      totalAssets += taxAdjustment.aretsResultat + taxAdjustment.skatteskuld;
+    }
+    
+    balansomslutning[yi] = totalAssets;
 
-    // Soliditet = eget kapital / balansomslutning * 100
-    // Eget kapital is stored as negative (credit) in SIE, negate to get accounting value
-    const egetKapital = -sumRange(ub, yi, 2080, 2099);
-    const totalAssets = balansomslutning[yi];
-    soliditet[yi] = totalAssets !== 0 ? Math.round((egetKapital / totalAssets) * 100) : 0;
+    // Soliditet = justerat eget kapital / balansomslutning × 100
+    // Justerat EK = EK + (1 - skattesats) × obeskattade reserver
+    let egetKapital = -sumRange(ub, yi, 2080, 2099);
+    const obeskatadeReserver = -sumRange(ub, yi, 2100, 2149);
+    
+    // For current year with tax adjustment, add calculated årets resultat to EK
+    if (yi === selectedYearIndex && taxAdjustment) {
+      egetKapital += taxAdjustment.aretsResultat;
+    }
+    
+    const justeratEK = egetKapital + (1 - 0.206) * obeskatadeReserver;
+    soliditet[yi] = totalAssets !== 0 ? Math.round((justeratEK / totalAssets) * 100) : 0;
   }
 
   return { years: yearLabels, nettoomsattning, resultatEfterFinansiellaPoster: resultatEfterFinansiella, balansomslutning, soliditet };
