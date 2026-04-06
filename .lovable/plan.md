@@ -1,20 +1,38 @@
 
 
-# Fix: Show Detail Adjustments in Tax Calculation UI
+# Fix: Inject Calculated Tax into Income Statement When Missing from SIE
 
 ## Problem
 
-The tax calculation includes detail adjustments from SIE accounts (8423 Räntekostnader, 8314 Skattefria ränteintäkter) in the computation of `skattemassigResultat`, but these rows are **hidden** in both the main page and the modal. Only the PDF shows them. This makes the numbers appear inconsistent — 28,374 + 0 - 11,435 does not equal 16,969.
+When `saknarSkattebokning` is true (no tax booked in SIE file), the income statement shows:
+- Skatt på årets resultat: **0 kr**
+- Årets resultat: **28 374 kr** (same as pre-tax)
+
+It should show:
+- Skatt på årets resultat: **-3 493 kr**
+- Årets resultat: **24 881 kr**
+
+The balance sheet and flerårsöversikt already receive a `taxAdjustment` — the income statement does not.
+
+## Root Cause
+
+`calculateIncomeStatement` reads tax from SIE accounts 8900-8989 (line 140). When no tax is booked, these are 0. The skatteberäkning is computed *after* the income statement, so the calculated tax is never fed back.
 
 ## Fix
 
-### 1. TaxCalculationSection.tsx — Add detail adjustment rows
+**`src/components/ReportWizard.tsx`**: After computing `skatteberakning`, create an adjusted income statement using a new helper or inline logic. When `saknarSkattebokning` is true, override the "Skatt på årets resultat" amounts and "Årets resultat" amounts in the sections with the calculated values.
 
-After the "Ej avdragsgilla kostnader" row (line ~71) and before "Outnyttjat underskott" (line ~72), insert a loop over `s.detailAdjustments` showing each adjustment with its label and signed amount.
+Specifically, create a `useMemo` that derives `adjustedIncomeStatement` from `incomeStatement` + `skatteberakning`:
+- Find the last section containing "Skatt på årets resultat" and "Årets resultat"
+- Replace their amounts for `selectedYearIndex` with `-skatteberakning.skattPaAretsResultat` and `skatteberakning.aretsResultat` respectively
+- Update `totalResult` accordingly
+- Pass `adjustedIncomeStatement` instead of `incomeStatement` to `ReportEditor`, `ReportPreview`, and PDF export
 
-### 2. VerificationModal.tsx — Add detail adjustment rows
+This avoids circular dependencies and keeps the core calculation pure.
 
-Same change: after the "Ej avdragsgilla kostnader" conditional row (line ~67) and before "Outnyttjat underskott" (line ~68), add the detail adjustment rows with proper sign display (+ for positive, - for negative).
+## Technical Details
 
-Both will iterate `s.detailAdjustments` and render a table row for each, matching the format already used in the PDF export.
+- Only the current year index is adjusted; previous year keeps its original SIE values
+- The adjustment only applies when `skatteberakning.saknarSkattebokning` is true
+- `totalResult` must also be updated so downstream consumers (like `tillBalanseratResultat`) get the correct value
 
