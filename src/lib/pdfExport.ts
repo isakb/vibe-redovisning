@@ -1,6 +1,6 @@
 // PDF Export using jsPDF
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { SieCompanyInfo, SieFiscalYear } from './sieParser';
 import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, formatSEK } from './k2Calculations';
 import { ReportData } from './k2Types';
@@ -8,8 +8,7 @@ import { ReportData } from './k2Types';
 // Extend jsPDF type for autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
+    lastAutoTable?: { finalY: number };
   }
 }
 
@@ -22,11 +21,24 @@ interface PDFExportOptions {
   flerarsOversikt: FlerarsOversikt;
   egetKapitalForandring: EgetKapitalForandring;
   fiscalYears: SieFiscalYear[];
+  selectedYearIndex: number;
 }
 
 export function generatePDF(options: PDFExportOptions) {
-  const { company, fiscalYear, reportData, incomeStatement, balanceSheet, flerarsOversikt, egetKapitalForandring, fiscalYears } = options;
-  
+  const {
+    company,
+    fiscalYear,
+    reportData,
+    incomeStatement,
+    balanceSheet,
+    flerarsOversikt,
+    egetKapitalForandring,
+    fiscalYears,
+    selectedYearIndex,
+  } = options;
+
+  const currentYearIndex = selectedYearIndex;
+  const previousYearIndex = selectedYearIndex - 1;
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -34,8 +46,8 @@ export function generatePDF(options: PDFExportOptions) {
   const contentWidth = pageWidth - 2 * margin;
   let y = margin;
 
-  const currentFY = fiscalYears.find(fy => fy.index === 0);
-  const prevFY = fiscalYears.find(fy => fy.index === -1);
+  const currentFY = fiscalYears.find(fy => fy.index === currentYearIndex);
+  const prevFY = fiscalYears.find(fy => fy.index === previousYearIndex);
 
   function addHeader() {
     doc.setFontSize(8);
@@ -81,7 +93,7 @@ export function generatePDF(options: PDFExportOptions) {
   doc.addPage();
   addHeader();
   y = 25;
-  
+
   doc.setFontSize(16);
   doc.setTextColor(0);
   doc.text('Förvaltningsberättelse', margin, y);
@@ -124,7 +136,7 @@ export function generatePDF(options: PDFExportOptions) {
     ['Soliditet (%)', ...flerarsOversikt.years.map(yr => `${flerarsOversikt.soliditet[yr.index] || 0}%`)],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [flerarsHeaders],
     body: flerarsBody,
@@ -136,7 +148,7 @@ export function generatePDF(options: PDFExportOptions) {
     },
     theme: 'grid',
   });
-  y = doc.lastAutoTable.finalY + 8;
+  y = (doc.lastAutoTable?.finalY ?? y) + 8;
 
   // Förändringar i eget kapital
   checkNewPage(50);
@@ -148,13 +160,13 @@ export function generatePDF(options: PDFExportOptions) {
   const ekHeaders = ['', 'Aktiekapital', 'Balanserat resultat', 'Årets resultat', 'Totalt'];
   const ekBody = egetKapitalForandring.rows.map(row => [
     row.label,
-    formatSEK(row.aktiekapital[0] || 0),
-    formatSEK(row.balanserat[0] || 0),
-    formatSEK(row.aretsResultat[0] || 0),
-    formatSEK(row.totalt[0] || 0),
+    formatSEK(row.aktiekapital[currentYearIndex] || 0),
+    formatSEK(row.balanserat[currentYearIndex] || 0),
+    formatSEK(row.aretsResultat[currentYearIndex] || 0),
+    formatSEK(row.totalt[currentYearIndex] || 0),
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [ekHeaders],
     body: ekBody,
@@ -163,7 +175,7 @@ export function generatePDF(options: PDFExportOptions) {
     headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
     theme: 'grid',
   });
-  y = doc.lastAutoTable.finalY + 8;
+  y = (doc.lastAutoTable?.finalY ?? y) + 8;
 
   // Resultatdisposition
   checkNewPage(30);
@@ -194,8 +206,8 @@ export function generatePDF(options: PDFExportOptions) {
   doc.text('Resultaträkning', margin, y);
   y += 4;
 
-  const currentLabel = currentFY ? `${currentFY.startDate.slice(0,4)}-${currentFY.startDate.slice(4,6)}-${currentFY.startDate.slice(6,8)} – ${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}` : '';
-  const prevLabel = prevFY ? `${prevFY.startDate.slice(0,4)}-${prevFY.startDate.slice(4,6)}-${prevFY.startDate.slice(6,8)} – ${prevFY.endDate.slice(0,4)}-${prevFY.endDate.slice(4,6)}-${prevFY.endDate.slice(6,8)}` : '';
+  const currentLabel = currentFY ? `${currentFY.startDate.slice(0, 4)}-${currentFY.startDate.slice(4, 6)}-${currentFY.startDate.slice(6, 8)} – ${currentFY.endDate.slice(0, 4)}-${currentFY.endDate.slice(4, 6)}-${currentFY.endDate.slice(6, 8)}` : '';
+  const prevLabel = prevFY ? `${prevFY.startDate.slice(0, 4)}-${prevFY.startDate.slice(4, 6)}-${prevFY.startDate.slice(6, 8)} – ${prevFY.endDate.slice(0, 4)}-${prevFY.endDate.slice(4, 6)}-${prevFY.endDate.slice(6, 8)}` : '';
 
   const rrBody: any[][] = [];
   for (const section of incomeStatement.sections) {
@@ -203,17 +215,17 @@ export function generatePDF(options: PDFExportOptions) {
       rrBody.push([{ content: section.title, colSpan: 3, styles: { fontStyle: 'bold', fontSize: 8, textColor: [100, 100, 100] } }]);
     }
     for (const item of section.items) {
-      const hasValue = [0, -1].some(yi => (item.amounts[yi] || 0) !== 0);
+      const hasValue = [currentYearIndex, previousYearIndex].some(yi => (item.amounts[yi] || 0) !== 0);
       if (!hasValue && !item.isBold) continue;
       rrBody.push([
         { content: item.label, styles: { fontStyle: item.isBold ? 'bold' : 'normal', cellPadding: { left: item.indent ? 8 : 2, top: 1.5, bottom: 1.5, right: 2 } } },
-        { content: formatSEK(item.amounts[0] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
-        { content: formatSEK(item.amounts[-1] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
+        { content: formatSEK(item.amounts[currentYearIndex] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
+        { content: formatSEK(item.amounts[previousYearIndex] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
       ]);
     }
   }
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['', currentLabel, prevLabel]],
     body: rrBody,
@@ -223,11 +235,11 @@ export function generatePDF(options: PDFExportOptions) {
     columnStyles: { 0: { cellWidth: 90 } },
     theme: 'plain',
     tableLineWidth: 0,
-    didDrawCell: (data: any) => {
+    didDrawCell: () => {
       // Add top border for subtotal rows
     },
   });
-  y = doc.lastAutoTable.finalY + 8;
+  y = (doc.lastAutoTable?.finalY ?? y) + 8;
   addFooter(doc.getNumberOfPages());
 
   // === Balansräkning ===
@@ -240,8 +252,8 @@ export function generatePDF(options: PDFExportOptions) {
   doc.text('Balansräkning', margin, y);
   y += 8;
 
-  const brDateCurrent = currentFY ? `${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}` : '';
-  const brDatePrev = prevFY ? `${prevFY.endDate.slice(0,4)}-${prevFY.endDate.slice(4,6)}-${prevFY.endDate.slice(6,8)}` : '';
+  const brDateCurrent = currentFY ? `${currentFY.endDate.slice(0, 4)}-${currentFY.endDate.slice(4, 6)}-${currentFY.endDate.slice(6, 8)}` : '';
+  const brDatePrev = prevFY ? `${prevFY.endDate.slice(0, 4)}-${prevFY.endDate.slice(4, 6)}-${prevFY.endDate.slice(6, 8)}` : '';
 
   // Tillgångar
   doc.setFontSize(12);
@@ -256,18 +268,18 @@ export function generatePDF(options: PDFExportOptions) {
     for (const item of section.items) {
       assetsBody.push([
         { content: item.label, styles: { fontStyle: item.isBold ? 'bold' : 'normal', cellPadding: { left: item.indent ? 8 : 2, top: 1.5, bottom: 1.5, right: 2 } } },
-        { content: formatSEK(item.amounts[0] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
-        { content: formatSEK(item.amounts[-1] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
+        { content: formatSEK(item.amounts[currentYearIndex] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
+        { content: formatSEK(item.amounts[previousYearIndex] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
       ]);
     }
   }
   assetsBody.push([
     { content: 'SUMMA TILLGÅNGAR', styles: { fontStyle: 'bold' } },
-    { content: formatSEK(balanceSheet.totalAssets[0] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: formatSEK(balanceSheet.totalAssets[-1] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: formatSEK(balanceSheet.totalAssets[currentYearIndex] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: formatSEK(balanceSheet.totalAssets[previousYearIndex] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['', brDateCurrent, brDatePrev]],
     body: assetsBody,
@@ -277,7 +289,7 @@ export function generatePDF(options: PDFExportOptions) {
     columnStyles: { 0: { cellWidth: 90 } },
     theme: 'plain',
   });
-  y = doc.lastAutoTable.finalY + 10;
+  y = (doc.lastAutoTable?.finalY ?? y) + 10;
 
   // Eget kapital och skulder
   checkNewPage(60);
@@ -294,18 +306,18 @@ export function generatePDF(options: PDFExportOptions) {
     for (const item of section.items) {
       liabBody.push([
         { content: item.label, styles: { fontStyle: item.isBold ? 'bold' : 'normal', cellPadding: { left: item.indent ? 8 : 2, top: 1.5, bottom: 1.5, right: 2 } } },
-        { content: formatSEK(item.amounts[0] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
-        { content: formatSEK(item.amounts[-1] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
+        { content: formatSEK(item.amounts[currentYearIndex] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
+        { content: formatSEK(item.amounts[previousYearIndex] || 0), styles: { halign: 'right', fontStyle: item.isBold ? 'bold' : 'normal' } },
       ]);
     }
   }
   liabBody.push([
     { content: 'SUMMA EGET KAPITAL OCH SKULDER', styles: { fontStyle: 'bold' } },
-    { content: formatSEK(balanceSheet.totalEquityAndLiabilities[0] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: formatSEK(balanceSheet.totalEquityAndLiabilities[-1] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: formatSEK(balanceSheet.totalEquityAndLiabilities[currentYearIndex] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: formatSEK(balanceSheet.totalEquityAndLiabilities[previousYearIndex] || 0), styles: { halign: 'right', fontStyle: 'bold' } },
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     body: liabBody,
     margin: { left: margin, right: margin },
@@ -313,7 +325,7 @@ export function generatePDF(options: PDFExportOptions) {
     columnStyles: { 0: { cellWidth: 90 } },
     theme: 'plain',
   });
-  y = doc.lastAutoTable.finalY + 8;
+  y = (doc.lastAutoTable?.finalY ?? y) + 8;
   addFooter(doc.getNumberOfPages());
 
   // === Noter ===
@@ -380,15 +392,21 @@ export function generatePDF(options: PDFExportOptions) {
 
   addFooter(doc.getNumberOfPages());
 
-  // Download using a temporary link (works in sandboxed iframes)
+  const fileName = `arsredovisning_${company.orgNumber.replace('-', '')}_${currentFY?.endDate.slice(0, 4) || ''}.pdf`;
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `arsredovisning_${company.orgNumber.replace('-', '')}_${currentFY?.endDate.slice(0, 4) || ''}.pdf`;
-  link.target = '_blank';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+
+  if (!openedWindow) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
