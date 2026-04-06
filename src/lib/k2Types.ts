@@ -59,6 +59,7 @@ export function createDefaultReportData(aretsResultat: number): ReportData {
     tillBalanseratResultat: aretsResultat,
     ejAvdragsgillaPoster: 0,
     skattesats: 20.6,
+    flerarsOverrides: {},
     redovisningsprinciper: defaultRedovisningsprinciper,
     medeltalAnstallda: '0',
     signatories: [{ name: '', role: 'Styrelseledamot' }],
