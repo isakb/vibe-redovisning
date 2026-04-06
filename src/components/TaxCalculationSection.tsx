@@ -63,6 +63,24 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange }:
                   </div>
                 </td>
               </tr>
+              <tr className="border-b">
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    Outnyttjat underskott från fg. år
+                  </div>
+                </td>
+                <td className="text-right py-2">
+                  <div className="flex items-center justify-end gap-1">
+                    <Input
+                      type="number"
+                      value={reportData.outnyttjatUnderskott}
+                      onChange={e => update({ outnyttjatUnderskott: parseFloat(e.target.value) || 0 })}
+                      className="w-32 text-right h-8"
+                    />
+                    <span className="text-muted-foreground">kr</span>
+                  </div>
+                </td>
+              </tr>
               <tr className="border-b font-medium">
                 <td className="py-2">Skattemässigt resultat</td>
                 <td className="text-right py-2">{formatSEK(s.skattemassigResultat)} kr</td>
