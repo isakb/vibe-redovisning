@@ -38,6 +38,8 @@ export function ReportEditor({
   egetKapitalForandring,
   skatteberakning,
   selectedYearIndex,
+  verModalOpen,
+  onVerModalOpenChange,
 }: ReportEditorProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
   const yi = selectedYearIndex;
