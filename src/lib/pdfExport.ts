@@ -2,7 +2,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SieCompanyInfo, SieFiscalYear } from './sieParser';
-import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, formatSEK } from './k2Calculations';
+import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from './k2Calculations';
 import { ReportData } from './k2Types';
 
 // Extend jsPDF type for autotable
@@ -22,6 +22,7 @@ interface PDFExportOptions {
   egetKapitalForandring: EgetKapitalForandring;
   fiscalYears: SieFiscalYear[];
   selectedYearIndex: number;
+  skatteberakning?: Skatteberakning;
 }
 
 export function generatePDF(options: PDFExportOptions) {
@@ -35,6 +36,7 @@ export function generatePDF(options: PDFExportOptions) {
     egetKapitalForandring,
     fiscalYears,
     selectedYearIndex,
+    skatteberakning,
   } = options;
 
   const currentYearIndex = selectedYearIndex;
@@ -73,6 +75,15 @@ export function generatePDF(options: PDFExportOptions) {
     return false;
   }
 
+  // Helper to get flerårsöversikt value with override support
+  function getFlerarsValue(key: 'nettoomsattning' | 'resultatEfterFinansiellaPoster' | 'balansomslutning' | 'soliditet', yearIndex: number): number | string {
+    const override = reportData.flerarsOverrides?.[yearIndex]?.[key];
+    const sieVal = (flerarsOversikt as any)[key === 'resultatEfterFinansiellaPoster' ? 'resultatEfterFinansiellaPoster' : key]?.[yearIndex] || 0;
+    const val = override !== undefined ? override : sieVal;
+    if (key === 'soliditet') return `${val}%`;
+    return formatSEK(val);
+  }
+
   // === PAGE 1: Cover ===
   y = pageHeight / 3;
   doc.setFontSize(24);
@@ -99,7 +110,19 @@ export function generatePDF(options: PDFExportOptions) {
   doc.text('Förvaltningsberättelse', margin, y);
   y += 10;
 
+  if (reportData.bolagetsSate) {
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text('Allmänt om verksamheten', margin, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.setTextColor(40);
+    doc.text(`Bolaget har sitt säte i ${reportData.bolagetsSate}.`, margin, y);
+    y += 8;
+  }
+
   doc.setFontSize(12);
+  doc.setTextColor(0);
   doc.text('Verksamheten', margin, y);
   y += 6;
   doc.setFontSize(10);
@@ -121,7 +144,7 @@ export function generatePDF(options: PDFExportOptions) {
     y += handLines.length * 5 + 4;
   }
 
-  // Flerårsöversikt
+  // Flerårsöversikt (with overrides)
   checkNewPage(50);
   doc.setFontSize(12);
   doc.setTextColor(0);
@@ -130,10 +153,10 @@ export function generatePDF(options: PDFExportOptions) {
 
   const flerarsHeaders = ['', ...flerarsOversikt.years.map(yr => yr.label)];
   const flerarsBody = [
-    ['Nettoomsättning (kr)', ...flerarsOversikt.years.map(yr => formatSEK(flerarsOversikt.nettoomsattning[yr.index] || 0))],
-    ['Resultat efter fin. poster (kr)', ...flerarsOversikt.years.map(yr => formatSEK(flerarsOversikt.resultatEfterFinansiellaPoster[yr.index] || 0))],
-    ['Balansomslutning (kr)', ...flerarsOversikt.years.map(yr => formatSEK(flerarsOversikt.balansomslutning[yr.index] || 0))],
-    ['Soliditet (%)', ...flerarsOversikt.years.map(yr => `${flerarsOversikt.soliditet[yr.index] || 0}%`)],
+    ['Nettoomsättning (kr)', ...flerarsOversikt.years.map(yr => getFlerarsValue('nettoomsattning', yr.index) as string)],
+    ['Resultat efter fin. poster (kr)', ...flerarsOversikt.years.map(yr => getFlerarsValue('resultatEfterFinansiellaPoster', yr.index) as string)],
+    ['Balansomslutning (kr)', ...flerarsOversikt.years.map(yr => getFlerarsValue('balansomslutning', yr.index) as string)],
+    ['Soliditet (%)', ...flerarsOversikt.years.map(yr => getFlerarsValue('soliditet', yr.index) as string)],
   ];
 
   autoTable(doc, {
@@ -143,9 +166,7 @@ export function generatePDF(options: PDFExportOptions) {
     margin: { left: margin, right: margin },
     styles: { fontSize: 9, cellPadding: 2 },
     headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-    columnStyles: {
-      0: { cellWidth: 60 },
-    },
+    columnStyles: { 0: { cellWidth: 60 } },
     theme: 'grid',
   });
   y = (doc.lastAutoTable?.finalY ?? y) + 8;
@@ -235,9 +256,6 @@ export function generatePDF(options: PDFExportOptions) {
     columnStyles: { 0: { cellWidth: 90 } },
     theme: 'plain',
     tableLineWidth: 0,
-    didDrawCell: () => {
-      // Add top border for subtotal rows
-    },
   });
   y = (doc.lastAutoTable?.finalY ?? y) + 8;
   addFooter(doc.getNumberOfPages());
@@ -328,6 +346,97 @@ export function generatePDF(options: PDFExportOptions) {
   y = (doc.lastAutoTable?.finalY ?? y) + 8;
   addFooter(doc.getNumberOfPages());
 
+  // === Skatteberäkning (if missing from SIE) ===
+  if (skatteberakning?.saknarSkattebokning) {
+    doc.addPage();
+    addHeader();
+    y = 25;
+
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text('Skatteberäkning', margin, y);
+    y += 8;
+
+    const taxBody: string[][] = [
+      ['Resultat före skatt', formatSEK(skatteberakning.resultatForeSkatt) + ' kr'],
+    ];
+    if (skatteberakning.ejAvdragsgillaPoster !== 0) {
+      taxBody.push(['Ej avdragsgilla kostnader', formatSEK(skatteberakning.ejAvdragsgillaPoster) + ' kr']);
+    }
+    if (skatteberakning.outnyttjatUnderskott !== 0) {
+      taxBody.push(['Outnyttjat underskott från fg. år', '-' + formatSEK(skatteberakning.outnyttjatUnderskott) + ' kr']);
+    }
+    taxBody.push(
+      ['Skattemässigt resultat', formatSEK(skatteberakning.skattemassigResultat) + ' kr'],
+      ['Skattesats', skatteberakning.skattesats + '%'],
+      ['Skatt på årets resultat', formatSEK(skatteberakning.skattPaAretsResultat) + ' kr'],
+    );
+
+    autoTable(doc, {
+      startY: y,
+      body: taxBody,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 10, cellPadding: 2 },
+      columnStyles: { 0: { cellWidth: 80 }, 1: { halign: 'right' } },
+      theme: 'plain',
+    });
+    y = (doc.lastAutoTable?.finalY ?? y) + 8;
+
+    // Verifikationsförslag - Skatt
+    checkNewPage(40);
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text('Förslag på verifikation — Skatt', margin, y);
+    y += 4;
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Konto', 'Kontonamn', 'Debit', 'Kredit']],
+      body: skatteberakning.skatteverifikation.map(r => [
+        r.konto, r.kontonamn,
+        r.debit > 0 ? formatSEK(r.debit) : '',
+        r.kredit > 0 ? formatSEK(r.kredit) : '',
+      ]),
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      theme: 'grid',
+    });
+    y = (doc.lastAutoTable?.finalY ?? y) + 3;
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Bokföringsdatum ${skatteberakning.bokforingsdatum}`, margin, y);
+    y += 8;
+
+    // Verifikationsförslag - Årets resultat
+    checkNewPage(40);
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text('Förslag på verifikation — Årets resultat', margin, y);
+    y += 4;
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Konto', 'Kontonamn', 'Debit', 'Kredit']],
+      body: skatteberakning.resultatverifikation.map(r => [
+        r.konto, r.kontonamn,
+        r.debit > 0 ? formatSEK(r.debit) : '',
+        r.kredit > 0 ? formatSEK(r.kredit) : '',
+      ]),
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      theme: 'grid',
+    });
+    y = (doc.lastAutoTable?.finalY ?? y) + 3;
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Bokföringsdatum ${skatteberakning.bokforingsdatum}`, margin, y);
+    y += 8;
+
+    addFooter(doc.getNumberOfPages());
+  }
+
   // === Noter ===
   doc.addPage();
   addHeader();
@@ -355,6 +464,28 @@ export function generatePDF(options: PDFExportOptions) {
   doc.setFontSize(10);
   doc.setTextColor(40);
   doc.text(`Medelantalet anställda under räkenskapsåret har uppgått till ${reportData.medeltalAnstallda}.`, margin, y);
+  y += 10;
+
+  // Ställda säkerheter
+  checkNewPage(20);
+  doc.setFontSize(12);
+  doc.setTextColor(0);
+  doc.text('Ställda säkerheter', margin, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setTextColor(40);
+  doc.text(reportData.stalldaSakerheter || 'Inga', margin, y);
+  y += 8;
+
+  // Eventualförpliktelser
+  checkNewPage(20);
+  doc.setFontSize(12);
+  doc.setTextColor(0);
+  doc.text('Eventualförpliktelser', margin, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setTextColor(40);
+  doc.text(reportData.eventualforpliktelser || 'Inga', margin, y);
   y += 10;
 
   addFooter(doc.getNumberOfPages());
