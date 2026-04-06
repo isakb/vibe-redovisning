@@ -17,12 +17,11 @@ interface ReportWizardProps {
 }
 
 export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
-  const sortedYears = useMemo(() => 
-    [...sieData.fiscalYears].sort((a, b) => b.index - a.index), 
-    [sieData.fiscalYears]
-  );
+  const selectedYearIndex = useMemo(() => {
+    const sorted = [...sieData.fiscalYears].sort((a, b) => b.index - a.index);
+    return sorted[0]?.index ?? 0;
+  }, [sieData.fiscalYears]);
 
-  const [selectedYearIndex, setSelectedYearIndex] = useState(sortedYears[0]?.index ?? 0);
   const [activeTab, setActiveTab] = useState('edit');
 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
