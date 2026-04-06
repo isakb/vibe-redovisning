@@ -547,7 +547,7 @@ export function calculateSkatteberakning(
   if (rantekostnaderSkatt !== 0) {
     detailAdjustments.push({ label: 'Räntekostnader för skatter och avgifter (8423)', amount: rantekostnaderSkatt });
   }
-  const skattefriaRantor = -sumRange(res, selectedYearIndex, 8314, 8314);
+  const skattefriaRantor = sumRange(res, selectedYearIndex, 8314, 8314);
   if (skattefriaRantor !== 0) {
     detailAdjustments.push({ label: 'Skattefria ränteintäkter, kortfristiga tillgångar (8314)', amount: skattefriaRantor });
   }
