@@ -582,6 +582,7 @@ export function calculateSkatteberakning(
     ejAvdragsgillaPoster: ejAvdragsgilla,
     outnyttjatUnderskott,
     skattemassigResultat,
+    beskattningsbarInkomst,
     skattesats: reportData.skattesats,
     skattPaAretsResultat,
     aretsResultat,
@@ -589,5 +590,6 @@ export function calculateSkatteberakning(
     skatteverifikation,
     resultatverifikation,
     bokforingsdatum,
+    detailAdjustments,
   };
 }
