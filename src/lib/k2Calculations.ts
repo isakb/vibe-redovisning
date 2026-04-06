@@ -250,6 +250,13 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
 
   // Kortfristiga skulder
   const kortfristigaSkulder = amountsNeg(2400, 2999);
+  // Inject calculated skatteskuld when tax bookings are missing from SIE
+  if (taxAdjustment) {
+    const yi = yearIndices[0];
+    if (yi !== undefined) {
+      kortfristigaSkulder[yi] = (kortfristigaSkulder[yi] || 0) + taxAdjustment.skatteskuld;
+    }
+  }
 
   const summaSkulder = sumAmounts(summaLangfristiga, kortfristigaSkulder);
   const summaEKochSkulder = sumAmounts(summaEgetKapital, obeskatadeReserver, avsattningar, summaSkulder);
