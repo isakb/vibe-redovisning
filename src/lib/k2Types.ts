@@ -19,6 +19,7 @@ export interface ReportData {
   
   // Skatteberäkning
   ejAvdragsgillaPoster: number;
+  outnyttjatUnderskott: number; // carry-forward loss from previous year
   skattesats: number; // default 20.6
   
   // Flerårsöversikt manuella värden
