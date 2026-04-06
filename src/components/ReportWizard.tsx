@@ -11,7 +11,8 @@ import { ReportEditor } from './ReportEditor';
 import { ReportPreview } from './ReportPreview';
 import { CompanyProfileEditor } from './CompanyProfile';
 import { generatePDF } from '@/lib/pdfExport';
-import { Download, Eye, Edit, ArrowLeft } from 'lucide-react';
+import { Download, Eye, Edit, ArrowLeft, FileText } from 'lucide-react';
+import { VerificationModal } from './VerificationModal';
 
 interface ReportWizardProps {
   sieData: SieData;
