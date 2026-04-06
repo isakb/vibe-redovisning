@@ -256,14 +256,13 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   // Långfristiga skulder (2300-2399)
   const summaLangfristiga = amountsNeg(2300, 2399);
 
-  // Kortfristiga skulder
-  const kortfristigaSkulder = amountsNeg(2400, 2999);
-  // Inject calculated skatteskuld when tax bookings are missing from SIE
-  if (taxAdjustment) {
-    const yi = yearIndices[0];
-    if (yi !== undefined) {
-      kortfristigaSkulder[yi] = (kortfristigaSkulder[yi] || 0) + taxAdjustment.skatteskuld;
-    }
+  // Kortfristiga skulder (2400-2999, excluding 2518 which is reclassified as asset)
+  const kortfristigaSkulderRaw = amountsNeg(2400, 2999);
+  // Remove 2518 from liabilities (it was negated by amountsNeg, so add back the raw value)
+  const skattefordran2518Neg = amountsNeg(2518, 2518);
+  const kortfristigaSkulder: Record<number, number> = {};
+  for (const yi of yearIndices) {
+    kortfristigaSkulder[yi] = (kortfristigaSkulderRaw[yi] || 0) - (skattefordran2518Neg[yi] || 0);
   }
   // Inject calculated skatteskuld when tax bookings are missing from SIE
   if (taxAdjustment) {
