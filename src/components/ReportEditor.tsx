@@ -295,31 +295,57 @@ export function ReportEditor({
           <CardTitle>Resultatdisposition</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Styrelsen föreslår att till förfogande stående medel disponeras enligt följande:
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Utdelning till aktieägarna (kr)</Label>
-              <Input
-                type="number"
-                value={reportData.utdelning}
-                onChange={e => {
-                  const utd = parseFloat(e.target.value) || 0;
-                  update({ utdelning: utd, tillBalanseratResultat: (incomeStatement.totalResult[yi] || 0) - utd });
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Balanseras i ny räkning (kr)</Label>
-              <Input
-                type="number"
-                value={Math.round(reportData.tillBalanseratResultat)}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-          </div>
+          {(() => {
+            const utgangRow = egetKapitalForandring.rows[egetKapitalForandring.rows.length - 1];
+            const balanserat = utgangRow?.balanserat[yi] || 0;
+            const aretsRes = utgangRow?.aretsResultat[yi] || 0;
+            const tillForfogande = balanserat + aretsRes;
+            const balanserasNy = tillForfogande - reportData.utdelning;
+            return (
+              <>
+                <p className="text-sm text-muted-foreground">Styrelsen föreslår att till förfogande stående medel</p>
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b">
+                      <td className="py-1.5">Balanserat resultat</td>
+                      <td className="text-right py-1.5">{formatSEK(balanserat)}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="py-1.5">Årets resultat</td>
+                      <td className="text-right py-1.5">{formatSEK(aretsRes)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 font-bold">Summa</td>
+                      <td className="text-right py-1.5 font-bold">{formatSEK(tillForfogande)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="text-sm text-muted-foreground mt-4">Disponeras enligt följande</p>
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Utdelas till aktieägare (kr)</Label>
+                    <Input
+                      type="number"
+                      value={reportData.utdelning}
+                      onChange={e => {
+                        const utd = parseFloat(e.target.value) || 0;
+                        update({ utdelning: utd, tillBalanseratResultat: tillForfogande - utd });
+                      }}
+                      className="w-40 text-right h-8"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Balanseras i ny räkning</span>
+                    <span className="text-sm font-medium">{formatSEK(balanserasNy)} kr</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t pt-2">
+                    <span className="text-sm font-bold">Summa</span>
+                    <span className="text-sm font-bold">{formatSEK(tillForfogande)} kr</span>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 

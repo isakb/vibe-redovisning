@@ -199,20 +199,46 @@ export function generatePDF(options: PDFExportOptions) {
   y = (doc.lastAutoTable?.finalY ?? y) + 8;
 
   // Resultatdisposition
-  checkNewPage(30);
+  checkNewPage(50);
   doc.setFontSize(12);
   doc.setTextColor(0);
   doc.text('Resultatdisposition', margin, y);
   y += 6;
   doc.setFontSize(10);
   doc.setTextColor(40);
-  doc.text('Styrelsen föreslår att till förfogande stående medel disponeras enligt följande:', margin, y);
+
+  const ekRows = egetKapitalForandring.rows;
+  const utgangRow = ekRows[ekRows.length - 1];
+  const balanserat = utgangRow?.balanserat[currentYearIndex] || 0;
+  const aretsRes = utgangRow?.aretsResultat[currentYearIndex] || 0;
+  const tillForfogande = balanserat + aretsRes;
+  const balanserasNy = tillForfogande - reportData.utdelning;
+
+  doc.text('Styrelsen föreslår att till förfogande stående medel', margin, y);
   y += 6;
-  if (reportData.utdelning > 0) {
-    doc.text(`Utdelning till aktieägarna: ${formatSEK(reportData.utdelning)} kr`, margin + 4, y);
-    y += 5;
-  }
-  doc.text(`Balanseras i ny räkning: ${formatSEK(reportData.tillBalanseratResultat)} kr`, margin + 4, y);
+  doc.text(`Balanserat resultat`, margin + 4, y);
+  doc.text(`${formatSEK(balanserat)}`, pageWidth - margin, y, { align: 'right' });
+  y += 5;
+  doc.text(`Årets resultat`, margin + 4, y);
+  doc.text(`${formatSEK(aretsRes)}`, pageWidth - margin, y, { align: 'right' });
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Summa`, margin + 4, y);
+  doc.text(`${formatSEK(tillForfogande)}`, pageWidth - margin, y, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  y += 7;
+  doc.text('Disponeras enligt följande', margin, y);
+  y += 6;
+  doc.text(`Utdelas till aktieägare`, margin + 4, y);
+  doc.text(`${formatSEK(reportData.utdelning)}`, pageWidth - margin, y, { align: 'right' });
+  y += 5;
+  doc.text(`Balanseras i ny räkning`, margin + 4, y);
+  doc.text(`${formatSEK(balanserasNy)}`, pageWidth - margin, y, { align: 'right' });
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Summa`, margin + 4, y);
+  doc.text(`${formatSEK(tillForfogande)}`, pageWidth - margin, y, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
   y += 8;
 
   addFooter(doc.getNumberOfPages());
