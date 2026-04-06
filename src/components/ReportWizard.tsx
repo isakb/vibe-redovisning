@@ -233,7 +233,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               company={sieData.company}
               fiscalYear={fiscalYearLabel}
               reportData={reportData}
-              incomeStatement={incomeStatement}
+              incomeStatement={adjustedIncomeStatement}
               balanceSheet={balanceSheet}
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
