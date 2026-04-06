@@ -73,7 +73,36 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
   
   const incomeStatement = useMemo(() => calculateIncomeStatement(sieData, yearIndices), [sieData, selectedYearIndex]);
-  const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
+  // aretsResultat will be set after adjustedIncomeStatement is computed below
+
+  const skatteberakning = useMemo(
+    () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
+    [incomeStatement, reportData, sieData, selectedYearIndex]
+  );
+
+  // When tax bookings are missing, inject calculated tax into income statement
+  const adjustedIncomeStatement = useMemo(() => {
+    if (!skatteberakning.saknarSkattebokning) return incomeStatement;
+    const newSections = incomeStatement.sections.map(section => ({
+      ...section,
+      items: section.items.map(item => {
+        if (item.label === 'Skatt på årets resultat') {
+          return { ...item, amounts: { ...item.amounts, [selectedYearIndex]: -skatteberakning.skattPaAretsResultat } };
+        }
+        if (item.label === 'Årets resultat') {
+          return { ...item, amounts: { ...item.amounts, [selectedYearIndex]: skatteberakning.aretsResultat } };
+        }
+        return item;
+      }),
+    }));
+    return {
+      ...incomeStatement,
+      sections: newSections,
+      totalResult: { ...incomeStatement.totalResult, [selectedYearIndex]: skatteberakning.aretsResultat },
+    };
+  }, [incomeStatement, skatteberakning, selectedYearIndex]);
+
+  const aretsResultat = adjustedIncomeStatement.totalResult[selectedYearIndex] || 0;
 
   // Update tillBalanseratResultat when year changes
   useEffect(() => {
@@ -81,11 +110,6 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
       setReportData({ ...reportData, tillBalanseratResultat: aretsResultat });
     }
   }, [selectedYearIndex, aretsResultat]);
-
-  const skatteberakning = useMemo(
-    () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
-    [incomeStatement, reportData, sieData, selectedYearIndex]
-  );
 
   // When tax bookings are missing, inject calculated tax into balance sheet
   const taxAdjustment = useMemo(() => {
@@ -117,7 +141,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
         company: sieData.company,
         fiscalYear: fiscalYearLabel,
         reportData,
-        incomeStatement,
+        incomeStatement: adjustedIncomeStatement,
         balanceSheet,
         flerarsOversikt,
         egetKapitalForandring,
@@ -197,7 +221,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               sieData={sieData}
               reportData={reportData}
               onChange={setReportData}
-              incomeStatement={incomeStatement}
+              incomeStatement={adjustedIncomeStatement}
               balanceSheet={balanceSheet}
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
@@ -211,7 +235,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               company={sieData.company}
               fiscalYear={fiscalYearLabel}
               reportData={reportData}
-              incomeStatement={incomeStatement}
+              incomeStatement={adjustedIncomeStatement}
               balanceSheet={balanceSheet}
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
