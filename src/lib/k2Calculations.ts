@@ -301,7 +301,7 @@ export function calculateFlerarsOversikt(data: SieData, selectedYearIndex: numbe
     // Eget kapital is stored as negative (credit) in SIE, negate to get accounting value
     const egetKapital = -sumRange(ub, yi, 2080, 2099);
     const totalAssets = balansomslutning[yi];
-    soliditet[yi] = totalAssets !== 0 ? Math.round((egetKapital / totalAssets) * 100) : 0;
+    soliditet[yi] = totalAssets !== 0 ? Math.min(100, Math.round((egetKapital / totalAssets) * 100)) : 0;
   }
 
   return { years: yearLabels, nettoomsattning, resultatEfterFinansiellaPoster: resultatEfterFinansiella, balansomslutning, soliditet };
