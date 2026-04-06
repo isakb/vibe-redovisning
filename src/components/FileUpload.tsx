@@ -133,9 +133,19 @@ export function FileUpload({ onFileParsed }: FileUploadProps) {
         </Card>
 
         <div className="text-center space-y-1 text-xs text-muted-foreground/70">
-          <p>All processing happens entirely in your browser — no data is sent to any server.</p>
-          <p>Company details and report settings are saved locally in your browser's storage.</p>
-          <p>Your SIE files never leave your device.</p>
+          <p>All bearbetning sker helt i din webbläsare — ingen data skickas till någon server.</p>
+          <p>Företagsuppgifter och rapportinställningar sparas lokalt i din webbläsares lagring.</p>
+          <p>Dina SIE-filer lämnar aldrig din enhet.</p>
+        </div>
+
+        <div className="text-center text-xs text-muted-foreground/60 pt-2 border-t border-border/30">
+          <p>
+            En gratis tjänst med öppen källkod från teamet bakom{' '}
+            <a href="https://www.skatteguru.se/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+              Skatteguru
+            </a>
+            {' '}— Sveriges ledande skatteberäkningstjänst för K4-blanketten.
+          </p>
         </div>
       </div>
     </div>
