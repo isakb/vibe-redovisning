@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { SieData } from '@/lib/sieParser';
-import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, formatFiscalYear } from '@/lib/k2Calculations';
+import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, calculateSkatteberakning, formatFiscalYear } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
