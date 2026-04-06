@@ -166,21 +166,51 @@ export function ReportPreview({
 
         {/* Resultatdisposition */}
         <h3 className="font-semibold text-foreground mt-6 mb-3">Resultatdisposition</h3>
-        <p className="text-sm text-foreground mb-2">Styrelsen föreslår att till förfogande stående medel disponeras enligt följande:</p>
-        <table className="text-sm">
-          <tbody>
-            {reportData.utdelning > 0 && (
-              <tr>
-                <td className="py-1 pr-8">Utdelning till aktieägarna</td>
-                <td className="text-right py-1">{formatSEK(reportData.utdelning)} kr</td>
-              </tr>
-            )}
-            <tr>
-              <td className="py-1 pr-8">Balanseras i ny räkning</td>
-              <td className="text-right py-1">{formatSEK(reportData.tillBalanseratResultat)} kr</td>
-            </tr>
-          </tbody>
-        </table>
+        {(() => {
+          const utgangRow = egetKapitalForandring.rows[egetKapitalForandring.rows.length - 1];
+          const balanserat = utgangRow?.balanserat[currentYI] || 0;
+          const aretsRes = utgangRow?.aretsResultat[currentYI] || 0;
+          const tillForfogande = balanserat + aretsRes;
+          const balanserasNy = tillForfogande - reportData.utdelning;
+          return (
+            <>
+              <p className="text-sm text-foreground mb-3">Styrelsen föreslår att till förfogande stående medel</p>
+              <table className="w-full text-sm mb-4">
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-1.5 pl-4">Balanserat resultat</td>
+                    <td className="text-right py-1.5">{formatSEK(balanserat)}</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-1.5 pl-4">Årets resultat</td>
+                    <td className="text-right py-1.5">{formatSEK(aretsRes)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 pl-4 font-bold">Summa</td>
+                    <td className="text-right py-1.5 font-bold">{formatSEK(tillForfogande)}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-sm text-foreground mb-3">Disponeras enligt följande</p>
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-1.5 pl-4">Utdelas till aktieägare</td>
+                    <td className="text-right py-1.5">{formatSEK(reportData.utdelning)}</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-1.5 pl-4">Balanseras i ny räkning</td>
+                    <td className="text-right py-1.5">{formatSEK(balanserasNy)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 pl-4 font-bold">Summa</td>
+                    <td className="text-right py-1.5 font-bold">{formatSEK(tillForfogande)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          );
+        })()}
       </div>
 
       {/* Resultaträkning */}
