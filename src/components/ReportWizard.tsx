@@ -245,6 +245,8 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               egetKapitalForandring={egetKapitalForandring}
               skatteberakning={skatteberakning}
               selectedYearIndex={selectedYearIndex}
+              verModalOpen={verModalOpen}
+              onVerModalOpenChange={setVerModalOpen}
             />
           </TabsContent>
           
