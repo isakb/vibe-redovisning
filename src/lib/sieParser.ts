@@ -255,19 +255,43 @@ export function parseSieFile(buffer: ArrayBuffer): SieData {
 
 /**
  * Merge multiple SIE files into a single SieData.
- * Company info is taken from the file with the latest fiscal year.
- * Fiscal years, balances, results, and verifications are merged/deduplicated.
+ * Year indices in SIE are relative per file (0=current, -1=prev).
+ * We remap all indices to be relative to the newest file's year 0.
  */
 export function mergeSieData(files: SieData[]): SieData {
   if (files.length === 0) throw new Error('No files to merge');
   if (files.length === 1) return files[0];
 
-  // Sort files by latest fiscal year to pick company info from newest
+  // Sort files by their year-0 end date (newest first)
   const sorted = [...files].sort((a, b) => {
-    const aMax = Math.max(...a.fiscalYears.map(fy => fy.index));
-    const bMax = Math.max(...b.fiscalYears.map(fy => fy.index));
-    return bMax - aMax;
+    const aYear0 = a.fiscalYears.find(fy => fy.index === 0);
+    const bYear0 = b.fiscalYears.find(fy => fy.index === 0);
+    return (bYear0?.endDate ?? '').localeCompare(aYear0?.endDate ?? '');
   });
+
+  // Build a map: endDate -> global index (relative to newest file)
+  // The newest file's year 0 keeps index 0
+  const dateToIndex = new Map<string, number>();
+  // First pass: collect all fiscal years with their absolute dates
+  const allFYs: { endDate: string; startDate: string; sourceFile: number; localIndex: number }[] = [];
+  for (let fi = 0; fi < sorted.length; fi++) {
+    for (const fy of sorted[fi].fiscalYears) {
+      allFYs.push({ endDate: fy.endDate, startDate: fy.startDate, sourceFile: fi, localIndex: fy.index });
+    }
+  }
+  // Deduplicate by endDate, sort by date descending, assign global indices
+  const uniqueEnds = [...new Set(allFYs.map(f => f.endDate))].sort((a, b) => b.localeCompare(a));
+  uniqueEnds.forEach((end, i) => dateToIndex.set(end, -i)); // 0, -1, -2, ...
+
+  // Build index remapper per file: localIndex -> globalIndex
+  function getRemapper(file: SieData): Map<number, number> {
+    const remap = new Map<number, number>();
+    for (const fy of file.fiscalYears) {
+      const globalIdx = dateToIndex.get(fy.endDate);
+      if (globalIdx !== undefined) remap.set(fy.index, globalIdx);
+    }
+    return remap;
+  }
 
   const merged: SieData = {
     company: { ...sorted[0].company },
@@ -285,6 +309,8 @@ export function mergeSieData(files: SieData[]): SieData {
   const seenRES = new Set<string>();
 
   for (const file of sorted) {
+    const remap = getRemapper(file);
+
     // Merge accounts
     for (const [num, acct] of file.accounts) {
       if (!merged.accounts.has(num)) {
@@ -292,34 +318,41 @@ export function mergeSieData(files: SieData[]): SieData {
       }
     }
 
-    // Merge fiscal years (deduplicate by index)
+    // Merge fiscal years (deduplicate by global index)
     for (const fy of file.fiscalYears) {
-      if (!seenFY.has(fy.index)) {
-        seenFY.add(fy.index);
-        merged.fiscalYears.push({ ...fy });
+      const gi = remap.get(fy.index);
+      if (gi !== undefined && !seenFY.has(gi)) {
+        seenFY.add(gi);
+        merged.fiscalYears.push({ ...fy, index: gi });
       }
     }
 
-    // Merge balances (deduplicate by yearIndex+accountNumber)
+    // Merge balances with remapped indices
     for (const b of file.openingBalances) {
-      const key = `${b.yearIndex}:${b.accountNumber}`;
+      const gi = remap.get(b.yearIndex);
+      if (gi === undefined) continue;
+      const key = `${gi}:${b.accountNumber}`;
       if (!seenIB.has(key)) {
         seenIB.add(key);
-        merged.openingBalances.push({ ...b });
+        merged.openingBalances.push({ ...b, yearIndex: gi });
       }
     }
     for (const b of file.closingBalances) {
-      const key = `${b.yearIndex}:${b.accountNumber}`;
+      const gi = remap.get(b.yearIndex);
+      if (gi === undefined) continue;
+      const key = `${gi}:${b.accountNumber}`;
       if (!seenUB.has(key)) {
         seenUB.add(key);
-        merged.closingBalances.push({ ...b });
+        merged.closingBalances.push({ ...b, yearIndex: gi });
       }
     }
     for (const b of file.results) {
-      const key = `${b.yearIndex}:${b.accountNumber}`;
+      const gi = remap.get(b.yearIndex);
+      if (gi === undefined) continue;
+      const key = `${gi}:${b.accountNumber}`;
       if (!seenRES.has(key)) {
         seenRES.add(key);
-        merged.results.push({ ...b });
+        merged.results.push({ ...b, yearIndex: gi });
       }
     }
 
