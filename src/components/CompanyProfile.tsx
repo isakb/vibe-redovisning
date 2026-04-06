@@ -55,6 +55,15 @@ export function CompanyProfileEditor({ profile, onChange }: CompanyProfileEditor
           </div>
 
           <div>
+            <Label>Bolagets säte</Label>
+            <Input
+              value={profile.bolagetsSate}
+              onChange={e => update({ bolagetsSate: e.target.value })}
+              placeholder="Stockholm"
+            />
+          </div>
+
+          <div>
             <Label>Plats (underskrift)</Label>
             <Input
               value={profile.plats}
