@@ -125,7 +125,7 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   const bokslutsdispositioner = amounts(8800, 8899);
 
   // Resultat före skatt
-  const resultatForeSkatt = sumAmounts(resultatEfterFinansiella, bokslutsdispositioner);
+  const resultatForeSkatt = sumAmounts(resultatEfterFinansiella, extraordinaraPoster, bokslutsdispositioner);
 
   // Skatt
   const skatt = amounts(8900, 8989);
