@@ -67,27 +67,35 @@ export function ReportPreview({
           <tbody>
             <tr className="border-b">
               <td className="py-1.5">Nettoomsättning (kr)</td>
-              {flerarsOversikt.years.map(y => (
-                <td key={y.index} className="text-right py-1.5 px-2">{formatSEK(flerarsOversikt.nettoomsattning[y.index] || 0)}</td>
-              ))}
+              {flerarsOversikt.years.map(y => {
+                const override = reportData.flerarsOverrides?.[y.index]?.nettoomsattning;
+                const val = override !== undefined ? override : (flerarsOversikt.nettoomsattning[y.index] || 0);
+                return <td key={y.index} className="text-right py-1.5 px-2">{formatSEK(val)}</td>;
+              })}
             </tr>
             <tr className="border-b">
               <td className="py-1.5">Resultat efter finansiella poster (kr)</td>
-              {flerarsOversikt.years.map(y => (
-                <td key={y.index} className="text-right py-1.5 px-2">{formatSEK(flerarsOversikt.resultatEfterFinansiellaPoster[y.index] || 0)}</td>
-              ))}
+              {flerarsOversikt.years.map(y => {
+                const override = reportData.flerarsOverrides?.[y.index]?.resultatEfterFinansiellaPoster;
+                const val = override !== undefined ? override : (flerarsOversikt.resultatEfterFinansiellaPoster[y.index] || 0);
+                return <td key={y.index} className="text-right py-1.5 px-2">{formatSEK(val)}</td>;
+              })}
             </tr>
             <tr className="border-b">
               <td className="py-1.5">Balansomslutning (kr)</td>
-              {flerarsOversikt.years.map(y => (
-                <td key={y.index} className="text-right py-1.5 px-2">{formatSEK(flerarsOversikt.balansomslutning[y.index] || 0)}</td>
-              ))}
+              {flerarsOversikt.years.map(y => {
+                const override = reportData.flerarsOverrides?.[y.index]?.balansomslutning;
+                const val = override !== undefined ? override : (flerarsOversikt.balansomslutning[y.index] || 0);
+                return <td key={y.index} className="text-right py-1.5 px-2">{formatSEK(val)}</td>;
+              })}
             </tr>
             <tr>
               <td className="py-1.5">Soliditet (%)</td>
-              {flerarsOversikt.years.map(y => (
-                <td key={y.index} className="text-right py-1.5 px-2">{flerarsOversikt.soliditet[y.index] || 0}%</td>
-              ))}
+              {flerarsOversikt.years.map(y => {
+                const override = reportData.flerarsOverrides?.[y.index]?.soliditet;
+                const val = override !== undefined ? override : (flerarsOversikt.soliditet[y.index] || 0);
+                return <td key={y.index} className="text-right py-1.5 px-2">{val}%</td>;
+              })}
             </tr>
           </tbody>
         </table>
