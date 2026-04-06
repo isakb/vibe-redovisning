@@ -69,6 +69,12 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
                   </div>
                 </td>
               </tr>
+              {s.detailAdjustments?.map((adj, idx) => (
+                <tr key={idx} className="border-b">
+                  <td className="py-2 text-muted-foreground pl-4">{adj.label}</td>
+                  <td className="text-right py-2">{adj.amount >= 0 ? '+ ' : '– '}{formatSEK(Math.abs(adj.amount))} kr</td>
+                </tr>
+              ))}
               <tr className="border-b">
                 <td className="py-2">
                   <div className="flex items-center gap-2">
