@@ -9,6 +9,10 @@ export interface ReportData {
   utdelning: number;
   tillBalanseratResultat: number; // auto-calculated: årets resultat - utdelning
   
+  // Skatteberäkning
+  ejAvdragsgillaPoster: number;
+  skattesats: number; // default 20.6
+  
   // Noter
   redovisningsprinciper: string;
   medeltalAnstallda: string;
