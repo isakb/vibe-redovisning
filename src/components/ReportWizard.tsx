@@ -87,6 +87,28 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
     [incomeStatement, reportData, sieData, selectedYearIndex]
   );
 
+  // When tax bookings are missing, inject calculated tax into income statement
+  const adjustedIncomeStatement = useMemo(() => {
+    if (!skatteberakning.saknarSkattebokning) return incomeStatement;
+    const newSections = incomeStatement.sections.map(section => ({
+      ...section,
+      items: section.items.map(item => {
+        if (item.label === 'Skatt på årets resultat') {
+          return { ...item, amounts: { ...item.amounts, [selectedYearIndex]: -skatteberakning.skattPaAretsResultat } };
+        }
+        if (item.label === 'Årets resultat') {
+          return { ...item, amounts: { ...item.amounts, [selectedYearIndex]: skatteberakning.aretsResultat } };
+        }
+        return item;
+      }),
+    }));
+    return {
+      ...incomeStatement,
+      sections: newSections,
+      totalResult: { ...incomeStatement.totalResult, [selectedYearIndex]: skatteberakning.aretsResultat },
+    };
+  }, [incomeStatement, skatteberakning, selectedYearIndex]);
+
   // When tax bookings are missing, inject calculated tax into balance sheet
   const taxAdjustment = useMemo(() => {
     if (!skatteberakning.saknarSkattebokning) return undefined;
