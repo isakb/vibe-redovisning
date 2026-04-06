@@ -1,5 +1,5 @@
 import { SieCompanyInfo, SieFiscalYear } from '@/lib/sieParser';
-import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, formatSEK } from '@/lib/k2Calculations';
+import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from '@/lib/k2Calculations';
 import { ReportData } from '@/lib/k2Types';
 import { Separator } from '@/components/ui/separator';
 
