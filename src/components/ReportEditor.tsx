@@ -75,23 +75,6 @@ export function ReportEditor({
         </Alert>
       )}
 
-      {/* Form toggle */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="font-semibold">Förkortad årsredovisning</Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Visar bruttoresultat istället för detaljerade intäkter/kostnader. Not om nettoomsättning blir obligatorisk.
-              </p>
-            </div>
-            <Switch
-              checked={reportData.useAbbreviatedForm}
-              onCheckedChange={(checked) => update({ useAbbreviatedForm: checked })}
-            />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Förvaltningsberättelse */}
       <Card>
