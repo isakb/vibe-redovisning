@@ -24,6 +24,7 @@ export function ReportPreview({
   flerarsOversikt,
   egetKapitalForandring,
   fiscalYears,
+  skatteberakning,
 }: ReportPreviewProps) {
   const currentFY = fiscalYears.find(fy => fy.index === 0);
   const prevFY = fiscalYears.find(fy => fy.index === -1);
