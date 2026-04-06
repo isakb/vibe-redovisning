@@ -304,9 +304,11 @@ export function mergeSieData(files: SieData[]): SieData {
   };
 
   const seenFY = new Set<number>();
-  const seenIB = new Set<string>();
-  const seenUB = new Set<string>();
-  const seenRES = new Set<string>();
+  // Track source priority: localIndex 0 = authoritative for that year
+  // Key -> { index in array, localIndex }
+  const ibMap = new Map<string, { idx: number; localIndex: number }>();
+  const ubMap = new Map<string, { idx: number; localIndex: number }>();
+  const resMap = new Map<string, { idx: number; localIndex: number }>();
 
   for (const file of sorted) {
     const remap = getRemapper(file);
@@ -327,34 +329,36 @@ export function mergeSieData(files: SieData[]): SieData {
       }
     }
 
-    // Merge balances with remapped indices
-    for (const b of file.openingBalances) {
-      const gi = remap.get(b.yearIndex);
-      if (gi === undefined) continue;
-      const key = `${gi}:${b.accountNumber}`;
-      if (!seenIB.has(key)) {
-        seenIB.add(key);
-        merged.openingBalances.push({ ...b, yearIndex: gi });
+    // Helper: merge balance entries, preferring data from files where localIndex is closest to 0
+    function mergeBalances(
+      source: SieBalance[],
+      target: SieBalance[],
+      tracker: Map<string, { idx: number; localIndex: number }>
+    ) {
+      for (const b of source) {
+        const localIdx = b.yearIndex; // original local index in this file
+        const gi = remap.get(localIdx);
+        if (gi === undefined) continue;
+        const key = `${gi}:${b.accountNumber}`;
+        const existing = tracker.get(key);
+        // Prefer the source with localIndex closest to 0 (0 = authoritative primary year)
+        if (!existing || Math.abs(localIdx) < Math.abs(existing.localIndex)) {
+          if (existing) {
+            // Replace existing entry
+            target[existing.idx] = { ...b, yearIndex: gi };
+          } else {
+            // New entry
+            tracker.set(key, { idx: target.length, localIndex: localIdx });
+            target.push({ ...b, yearIndex: gi });
+          }
+          tracker.set(key, { idx: existing?.idx ?? (target.length - 1), localIndex: localIdx });
+        }
       }
     }
-    for (const b of file.closingBalances) {
-      const gi = remap.get(b.yearIndex);
-      if (gi === undefined) continue;
-      const key = `${gi}:${b.accountNumber}`;
-      if (!seenUB.has(key)) {
-        seenUB.add(key);
-        merged.closingBalances.push({ ...b, yearIndex: gi });
-      }
-    }
-    for (const b of file.results) {
-      const gi = remap.get(b.yearIndex);
-      if (gi === undefined) continue;
-      const key = `${gi}:${b.accountNumber}`;
-      if (!seenRES.has(key)) {
-        seenRES.add(key);
-        merged.results.push({ ...b, yearIndex: gi });
-      }
-    }
+
+    mergeBalances(file.openingBalances, merged.openingBalances, ibMap);
+    mergeBalances(file.closingBalances, merged.closingBalances, ubMap);
+    mergeBalances(file.results, merged.results, resMap);
 
     // Merge verifications
     merged.verifications.push(...file.verifications);
