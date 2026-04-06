@@ -14,6 +14,8 @@ interface TaxCalculationSectionProps {
   skatteberakning: Skatteberakning;
   reportData: ReportData;
   onChange: (data: ReportData) => void;
+  company: SieCompanyInfo;
+  fiscalYear: string;
 }
 
 export function TaxCalculationSection({ skatteberakning, reportData, onChange }: TaxCalculationSectionProps) {
