@@ -429,7 +429,8 @@ export function calculateSkatteberakning(
   const resultatForeSkatt = totalResultInclTax - skattFromSIE;
 
   const ejAvdragsgilla = reportData.ejAvdragsgillaPoster || 0;
-  const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla;
+  const outnyttjatUnderskott = reportData.outnyttjatUnderskott || 0;
+  const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla - outnyttjatUnderskott;
   const skattesats = reportData.skattesats / 100;
   const skattPaAretsResultat = skattemassigResultat > 0 ? Math.round(skattemassigResultat * skattesats) : 0;
   const aretsResultat = resultatForeSkatt - skattPaAretsResultat;
