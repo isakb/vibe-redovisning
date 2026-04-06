@@ -1,46 +1,56 @@
 
 
-# Skatteberäkning & Bokslutsverifikationer
+# Multi-File Upload, Year Navigation & Company Profile
 
-## Vad som byggs
+## What We're Building
 
-En ny sektion i appen som visar:
+1. **Multi-file upload** — Accept multiple .si/.se files, merge their data into a unified state covering all available fiscal years
+2. **Year selector** — Navigate between years, each with its own editable ReportData
+3. **Company profile** — Persistent (localStorage) profile storing verksamhetsbeskrivning, board members, and other reusable info that auto-populates new reports
 
-1. **Skatteberäkning** — Beräknar skattemässigt resultat från RR-data, identifierar ej avdragsgilla kostnader (konto 7000-intervallet markerade som ej avdragsgilla), applicerar skattesats 20.6%, och visar skattebelopp.
+## Data Architecture
 
-2. **Förslag på verifikationer** — Två bokföringsförslag:
-   - **Skatteverifikation**: Debit 2512 / Kredit 8910
-   - **Årets resultat-verifikation**: Debit 2099 / Kredit 8999
+```text
+localStorage keys:
+  "k2-company-{orgNumber}"  → CompanyProfile (verksamhetsbeskrivning, signatories, plats)
+  "k2-reports-{orgNumber}"  → Record<yearIndex, ReportData>
 
-3. **Detektering av saknade poster** — Om konto 8910/2512 saknar saldon i SIE-filen, flaggas att skatteberäkning saknas och verifikationsförslag visas. Om de redan finns, visas befintliga värden.
+In-memory:
+  MergedSieData = merged accounts, balances, results, fiscal years from all uploaded files
+```
 
-## Beräkningslogik
+## Technical Changes
 
-- **Resultat före skatt** = Resultat efter finansiella poster (redan beräknat i RR)
-- **Ej avdragsgilla kostnader** = Summa konton som representerar ej avdragsgilla poster (t.ex. representation 6072, förseningsavgifter 6990 etc.) — initialt satt till 0 kr men redigerbart av användaren
-- **Skattemässigt resultat** = Resultat före skatt + ej avdragsgilla kostnader
-- **Skattesats** = 20.6% (hårdkodad, redigerbar)
-- **Skatt på årets resultat** = Skattemässigt resultat × skattesats, avrundat till heltal
-- **Årets resultat** = Resultat före skatt − skatt
-
-## Tekniska ändringar
+### `src/lib/sieParser.ts`
+- New `mergeSieData(files: SieData[]): SieData` function — merges fiscal years, accounts, balances, results, and verifications from multiple SIE files. Deduplicates by year index. Company info taken from the file with the latest fiscal year.
 
 ### `src/lib/k2Types.ts`
-- Lägg till fält i `ReportData`: `ejAvdragsgillaPoster: number`, `skattesats: number` (default 20.6)
+- New `CompanyProfile` interface: `{ orgNumber, name, verksamhetsbeskrivning, signatories, plats }`
+- New helpers: `loadCompanyProfile(orgNumber)`, `saveCompanyProfile(profile)`, `loadYearReports(orgNumber)`, `saveYearReports(orgNumber, data)`
 
-### `src/lib/k2Calculations.ts`
-- Ny funktion `calculateSkatteberakning(incomeStatement, reportData)` som returnerar skattemässigt resultat, skatt, årets resultat, och verifikationsförslag
-- Ny interface `Skatteberakning` med alla beräknade värden
-- Ny interface `Verifikationsrad` med konto, debit, kredit
+### `src/components/FileUpload.tsx`
+- Accept multiple files (`multiple` attribute on input)
+- Parse all files, merge via `mergeSieData`, then pass merged data up
+- Show list of uploaded files with remove option
 
-### `src/components/ReportEditor.tsx`
-- Ny sektion "Skatteberäkning & Bokslut" med:
-  - Tabell som visar skatteberäkningen (skattemässigt resultat, ej avdragsgilla, skattesats, skatt)
-  - Redigerbart fält för "Ej avdragsgilla kostnader"
-  - Redigerbart fält för skattesats
-  - Verifikationsförslag som tabeller (konto/debit/kredit)
-  - Bokföringsdatum = räkenskapsårets sista dag
+### `src/pages/Index.tsx`
+- After SIE data is loaded, load/create CompanyProfile from localStorage
+- Pass profile + per-year report data to ReportWizard
 
-### `src/components/ReportPreview.tsx`
-- Visa skatteberäkning och verifikationsförslag i förhandsgranskningen
+### `src/components/ReportWizard.tsx`
+- Add year selector tabs/dropdown showing all available fiscal years
+- Maintain `Record<number, ReportData>` for per-year report data
+- On year switch, load/create that year's ReportData (pre-populated from CompanyProfile defaults)
+- Auto-save all state to localStorage on changes
+- New "Företagsprofil" section/dialog for editing persistent company info
+
+### `src/components/CompanyProfile.tsx` (new)
+- Card/dialog for editing company profile fields: verksamhetsbeskrivning, board members (signatories), plats
+- Changes save to localStorage and propagate to current report's defaults
+
+### Persistence Flow
+1. User uploads one or more .si files → merged into single SieData
+2. On load, check localStorage for existing CompanyProfile by orgNumber → pre-fill ReportData defaults
+3. Each year's ReportData auto-saves to localStorage on edit
+4. Company profile changes update localStorage and optionally sync to current year's ReportData
 
