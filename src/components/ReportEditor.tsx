@@ -1,5 +1,5 @@
 import { SieData } from '@/lib/sieParser';
-import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, formatSEK } from '@/lib/k2Calculations';
+import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from '@/lib/k2Calculations';
 import { ReportData, Signatory } from '@/lib/k2Types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2 } from 'lucide-react';
 import { FinancialTable } from './FinancialTable';
+import { TaxCalculationSection } from './TaxCalculationSection';
 
 interface ReportEditorProps {
   sieData: SieData;
@@ -18,6 +19,7 @@ interface ReportEditorProps {
   balanceSheet: K2BalanceSheet;
   flerarsOversikt: FlerarsOversikt;
   egetKapitalForandring: EgetKapitalForandring;
+  skatteberakning: Skatteberakning;
 }
 
 export function ReportEditor({
@@ -28,6 +30,7 @@ export function ReportEditor({
   balanceSheet,
   flerarsOversikt,
   egetKapitalForandring,
+  skatteberakning,
 }: ReportEditorProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
 
@@ -252,6 +255,13 @@ export function ReportEditor({
           </div>
         </CardContent>
       </Card>
+
+      {/* Skatteberäkning & Bokslut */}
+      <TaxCalculationSection
+        skatteberakning={skatteberakning}
+        reportData={reportData}
+        onChange={onChange}
+      />
 
       {/* Noter */}
       <Card>

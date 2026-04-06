@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { SieData } from '@/lib/sieParser';
-import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, formatFiscalYear } from '@/lib/k2Calculations';
+import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, calculateSkatteberakning, formatFiscalYear } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -35,6 +35,11 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
   
   const [reportData, setReportData] = useState<ReportData>(
     createDefaultReportData(aretsResultat)
+  );
+
+  const skatteberakning = useMemo(
+    () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
+    [incomeStatement, reportData, sieData, selectedYearIndex]
   );
 
   const selectedFY = sieData.fiscalYears.find(fy => fy.index === selectedYearIndex);
@@ -109,6 +114,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
               balanceSheet={balanceSheet}
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
+              skatteberakning={skatteberakning}
             />
           </TabsContent>
           
@@ -122,6 +128,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
               fiscalYears={sieData.fiscalYears}
+              skatteberakning={skatteberakning}
             />
           </TabsContent>
         </Tabs>
