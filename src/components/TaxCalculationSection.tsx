@@ -160,60 +160,27 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
         {s.saknarSkattebokning && (
           <>
             <Separator />
-
-            {/* Verifikationsförslag: Skatt */}
-            <div>
-              <h3 className="font-semibold text-foreground mb-3">Förslag på verifikation — Skatt</h3>
-              <table className="w-full text-sm border">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left py-2 px-3 font-medium">Konto</th>
-                    <th className="text-left py-2 px-3 font-medium">Kontonamn</th>
-                    <th className="text-right py-2 px-3 font-medium">Debit</th>
-                    <th className="text-right py-2 px-3 font-medium">Kredit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.skatteverifikation.map((rad, i) => (
-                    <tr key={i} className="border-b last:border-b-0">
-                      <td className="py-2 px-3 font-mono">{rad.konto}</td>
-                      <td className="py-2 px-3">{rad.kontonamn}</td>
-                      <td className="text-right py-2 px-3">{rad.debit > 0 ? formatSEK(rad.debit) : ''}</td>
-                      <td className="text-right py-2 px-3">{rad.kredit > 0 ? formatSEK(rad.kredit) : ''}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-xs text-muted-foreground mt-2">Bokföringsdatum {s.bokforingsdatum}</p>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => setModalOpen(true)}>
+                <FileText className="h-4 w-4 mr-1" />
+                Visa bokföringsförslag
+              </Button>
+              {reportData.verifikationerGodkanda && (
+                <Badge variant="secondary" className="text-xs">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Verifikationer godkända
+                </Badge>
+              )}
             </div>
-
-            <Separator />
-
-            {/* Verifikationsförslag: Årets resultat */}
-            <div>
-              <h3 className="font-semibold text-foreground mb-3">Förslag på verifikation — Årets resultat</h3>
-              <table className="w-full text-sm border">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left py-2 px-3 font-medium">Konto</th>
-                    <th className="text-left py-2 px-3 font-medium">Kontonamn</th>
-                    <th className="text-right py-2 px-3 font-medium">Debit</th>
-                    <th className="text-right py-2 px-3 font-medium">Kredit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.resultatverifikation.map((rad, i) => (
-                    <tr key={i} className="border-b last:border-b-0">
-                      <td className="py-2 px-3 font-mono">{rad.konto}</td>
-                      <td className="py-2 px-3">{rad.kontonamn}</td>
-                      <td className="text-right py-2 px-3">{rad.debit > 0 ? formatSEK(rad.debit) : ''}</td>
-                      <td className="text-right py-2 px-3">{rad.kredit > 0 ? formatSEK(rad.kredit) : ''}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-xs text-muted-foreground mt-2">Bokföringsdatum {s.bokforingsdatum}</p>
-            </div>
+            <VerificationModal
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              skatteberakning={s}
+              company={company}
+              fiscalYear={fiscalYear}
+              onAccept={() => update({ verifikationerGodkanda: true })}
+              accepted={reportData.verifikationerGodkanda}
+            />
           </>
         )}
       </CardContent>
