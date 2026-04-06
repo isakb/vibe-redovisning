@@ -1,7 +1,9 @@
 import { SieCompanyInfo, SieFiscalYear } from '@/lib/sieParser';
-import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from '@/lib/k2Calculations';
+import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK, formatDate } from '@/lib/k2Calculations';
 import { ReportData } from '@/lib/k2Types';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface ReportPreviewProps {
   company: SieCompanyInfo;
@@ -13,6 +15,7 @@ interface ReportPreviewProps {
   egetKapitalForandring: EgetKapitalForandring;
   fiscalYears: SieFiscalYear[];
   skatteberakning: Skatteberakning;
+  selectedYearIndex: number;
 }
 
 export function ReportPreview({
@@ -25,12 +28,39 @@ export function ReportPreview({
   egetKapitalForandring,
   fiscalYears,
   skatteberakning,
+  selectedYearIndex,
 }: ReportPreviewProps) {
-  const currentFY = fiscalYears.find(fy => fy.index === 0);
-  const prevFY = fiscalYears.find(fy => fy.index === -1);
+  const currentYI = selectedYearIndex;
+  const prevYI = selectedYearIndex - 1;
+  const currentFY = fiscalYears.find(fy => fy.index === currentYI);
+  const prevFY = fiscalYears.find(fy => fy.index === prevYI);
+
+  const formatFYRange = (fy: SieFiscalYear) =>
+    `${fy.startDate.slice(0,4)}-${fy.startDate.slice(4,6)}-${fy.startDate.slice(6,8)} – ${fy.endDate.slice(0,4)}-${fy.endDate.slice(4,6)}-${fy.endDate.slice(6,8)}`;
+  const formatFYDate = (fy: SieFiscalYear) =>
+    `${fy.endDate.slice(0,4)}-${fy.endDate.slice(4,6)}-${fy.endDate.slice(6,8)}`;
+
+  // Balance verification
+  const totalA = balanceSheet.totalAssets[currentYI] || 0;
+  const totalEL = balanceSheet.totalEquityAndLiabilities[currentYI] || 0;
+  const balanceOk = Math.abs(totalA - totalEL) < 1;
+
+  // Resultatdisposition breakdown
+  const egetKapitalRows = egetKapitalForandring.rows;
+  const balResultatForeDisp = egetKapitalRows.length > 0 ? (egetKapitalRows[0]?.balanserat[currentYI] || 0) + (egetKapitalRows[0]?.aretsResultat[currentYI] || 0) : 0;
 
   return (
     <div className="max-w-3xl mx-auto bg-card border rounded-lg shadow-sm">
+      {/* Balance warning */}
+      {!balanceOk && (
+        <Alert variant="destructive" className="m-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Balansräkningen stämmer inte: Tillgångar ({formatSEK(totalA)}) ≠ Eget kapital och skulder ({formatSEK(totalEL)}). Differens: {formatSEK(totalA - totalEL)} kr.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Cover page */}
       <div className="p-12 text-center border-b">
         <h1 className="text-2xl font-bold text-foreground mb-2">Årsredovisning</h1>
@@ -43,6 +73,13 @@ export function ReportPreview({
       <div className="p-8 border-b">
         <h2 className="text-xl font-bold text-foreground mb-4">Förvaltningsberättelse</h2>
         
+        {reportData.bolagetsSate && (
+          <>
+            <h3 className="font-semibold text-foreground mt-4 mb-2">Allmänt om verksamheten</h3>
+            <p className="text-sm text-foreground">Bolaget har sitt säte i {reportData.bolagetsSate}.</p>
+          </>
+        )}
+
         <h3 className="font-semibold text-foreground mt-4 mb-2">Verksamheten</h3>
         <p className="text-sm text-foreground whitespace-pre-wrap">{reportData.verksamhetsbeskrivning}</p>
 
@@ -118,10 +155,10 @@ export function ReportPreview({
                 <td className={`py-1.5 ${i === 0 || i === egetKapitalForandring.rows.length - 1 ? 'font-medium' : ''}`}>
                   {row.label}
                 </td>
-                <td className="text-right py-1.5 px-2">{formatSEK(row.aktiekapital[0] || 0)}</td>
-                <td className="text-right py-1.5 px-2">{formatSEK(row.balanserat[0] || 0)}</td>
-                <td className="text-right py-1.5 px-2">{formatSEK(row.aretsResultat[0] || 0)}</td>
-                <td className="text-right py-1.5 px-2 font-medium">{formatSEK(row.totalt[0] || 0)}</td>
+                <td className="text-right py-1.5 px-2">{formatSEK(row.aktiekapital[currentYI] || 0)}</td>
+                <td className="text-right py-1.5 px-2">{formatSEK(row.balanserat[currentYI] || 0)}</td>
+                <td className="text-right py-1.5 px-2">{formatSEK(row.aretsResultat[currentYI] || 0)}</td>
+                <td className="text-right py-1.5 px-2 font-medium">{formatSEK(row.totalt[currentYI] || 0)}</td>
               </tr>
             ))}
           </tbody>
@@ -154,35 +191,35 @@ export function ReportPreview({
             <tr className="border-b-2 border-foreground">
               <th className="text-left py-2"></th>
               <th className="text-right py-2 px-2 font-medium">
-                {currentFY ? `${currentFY.startDate.slice(0,4)}-${currentFY.startDate.slice(4,6)}-${currentFY.startDate.slice(6,8)} – ${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}` : ''}
+                {currentFY ? formatFYRange(currentFY) : ''}
               </th>
               <th className="text-right py-2 px-2 font-medium">
-                {prevFY ? `${prevFY.startDate.slice(0,4)}-${prevFY.startDate.slice(4,6)}-${prevFY.startDate.slice(6,8)} – ${prevFY.endDate.slice(0,4)}-${prevFY.endDate.slice(4,6)}-${prevFY.endDate.slice(6,8)}` : ''}
+                {prevFY ? formatFYRange(prevFY) : ''}
               </th>
             </tr>
           </thead>
           <tbody>
             {incomeStatement.sections.map((section, si) => (
-              <>
+              <React.Fragment key={`s-${si}`}>
                 {section.title && (
-                  <tr key={`s-${si}`}>
+                  <tr>
                     <td colSpan={3} className="pt-4 pb-1 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
                       {section.title}
                     </td>
                   </tr>
                 )}
                 {section.items.map((item, ii) => {
-                  const hasValue = [0, -1].some(yi => (item.amounts[yi] || 0) !== 0);
+                  const hasValue = [currentYI, prevYI].some(yi => (item.amounts[yi] || 0) !== 0);
                   if (!hasValue && !item.isBold) return null;
                   return (
                     <tr key={`${si}-${ii}`} className={`${item.isSubtotal ? 'border-t' : ''} ${item.isBold ? 'font-semibold' : ''}`}>
                       <td className="py-1" style={{ paddingLeft: item.indent ? `${item.indent * 16}px` : undefined }}>{item.label}</td>
-                      <td className="text-right py-1 px-2">{formatSEK(item.amounts[0] || 0)}</td>
-                      <td className="text-right py-1 px-2">{formatSEK(item.amounts[-1] || 0)}</td>
+                      <td className="text-right py-1 px-2">{formatSEK(item.amounts[currentYI] || 0)}</td>
+                      <td className="text-right py-1 px-2">{formatSEK(item.amounts[prevYI] || 0)}</td>
                     </tr>
                   );
                 })}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -198,18 +235,18 @@ export function ReportPreview({
             <tr className="border-b-2 border-foreground">
               <th className="text-left py-2"></th>
               <th className="text-right py-2 px-2 font-medium">
-                {currentFY ? `${currentFY.endDate.slice(0,4)}-${currentFY.endDate.slice(4,6)}-${currentFY.endDate.slice(6,8)}` : ''}
+                {currentFY ? formatFYDate(currentFY) : ''}
               </th>
               <th className="text-right py-2 px-2 font-medium">
-                {prevFY ? `${prevFY.endDate.slice(0,4)}-${prevFY.endDate.slice(4,6)}-${prevFY.endDate.slice(6,8)}` : ''}
+                {prevFY ? formatFYDate(prevFY) : ''}
               </th>
             </tr>
           </thead>
           <tbody>
             {balanceSheet.assets.map((section, si) => (
-              <>
+              <React.Fragment key={`a-${si}`}>
                 {section.title && (
-                  <tr key={`a-${si}`}>
+                  <tr>
                     <td colSpan={3} className="pt-3 pb-1 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
                       {section.title}
                     </td>
@@ -218,16 +255,16 @@ export function ReportPreview({
                 {section.items.map((item, ii) => (
                   <tr key={`a-${si}-${ii}`} className={`${item.isSubtotal ? 'border-t' : ''} ${item.isBold ? 'font-semibold' : ''}`}>
                     <td className="py-1" style={{ paddingLeft: item.indent ? `${item.indent * 16}px` : undefined }}>{item.label}</td>
-                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[0] || 0)}</td>
-                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[-1] || 0)}</td>
+                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[currentYI] || 0)}</td>
+                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[prevYI] || 0)}</td>
                   </tr>
                 ))}
-              </>
+              </React.Fragment>
             ))}
             <tr className="border-t-2 border-foreground font-bold">
               <td className="py-2">SUMMA TILLGÅNGAR</td>
-              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalAssets[0] || 0)}</td>
-              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalAssets[-1] || 0)}</td>
+              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalAssets[currentYI] || 0)}</td>
+              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalAssets[prevYI] || 0)}</td>
             </tr>
           </tbody>
         </table>
@@ -238,9 +275,9 @@ export function ReportPreview({
         <table className="w-full text-sm border-collapse">
           <tbody>
             {balanceSheet.equityAndLiabilities.map((section, si) => (
-              <>
+              <React.Fragment key={`e-${si}`}>
                 {section.title && (
-                  <tr key={`e-${si}`}>
+                  <tr>
                     <td colSpan={3} className="pt-3 pb-1 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
                       {section.title}
                     </td>
@@ -249,16 +286,16 @@ export function ReportPreview({
                 {section.items.map((item, ii) => (
                   <tr key={`e-${si}-${ii}`} className={`${item.isSubtotal ? 'border-t' : ''} ${item.isBold ? 'font-semibold' : ''}`}>
                     <td className="py-1" style={{ paddingLeft: item.indent ? `${item.indent * 16}px` : undefined }}>{item.label}</td>
-                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[0] || 0)}</td>
-                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[-1] || 0)}</td>
+                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[currentYI] || 0)}</td>
+                    <td className="text-right py-1 px-2">{formatSEK(item.amounts[prevYI] || 0)}</td>
                   </tr>
                 ))}
-              </>
+              </React.Fragment>
             ))}
             <tr className="border-t-2 border-foreground font-bold">
               <td className="py-2">SUMMA EGET KAPITAL OCH SKULDER</td>
-              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalEquityAndLiabilities[0] || 0)}</td>
-              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalEquityAndLiabilities[-1] || 0)}</td>
+              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalEquityAndLiabilities[currentYI] || 0)}</td>
+              <td className="text-right py-2 px-2">{formatSEK(balanceSheet.totalEquityAndLiabilities[prevYI] || 0)}</td>
             </tr>
           </tbody>
         </table>
@@ -335,7 +372,50 @@ export function ReportPreview({
         <p className="text-sm text-foreground whitespace-pre-wrap mb-4">{reportData.redovisningsprinciper}</p>
 
         <h3 className="font-semibold text-foreground mb-2">Not 2 – Medelantal anställda</h3>
-        <p className="text-sm text-foreground">Medelantalet anställda under räkenskapsåret har uppgått till {reportData.medeltalAnstallda}.</p>
+        <p className="text-sm text-foreground mb-4">Medelantalet anställda under räkenskapsåret har uppgått till {reportData.medeltalAnstallda}.</p>
+
+        {reportData.useAbbreviatedForm && reportData.noteNettoomsattning && (
+          <>
+            <h3 className="font-semibold text-foreground mb-2">Not 3 – Nettoomsättning</h3>
+            <p className="text-sm text-foreground whitespace-pre-wrap mb-4">{reportData.noteNettoomsattning}</p>
+          </>
+        )}
+
+        {reportData.noteAvskrivningsgrunder && (
+          <>
+            <h3 className="font-semibold text-foreground mb-2">Not {reportData.useAbbreviatedForm ? '4' : '3'} – Avskrivningar av materiella anläggningstillgångar</h3>
+            <p className="text-sm text-foreground whitespace-pre-wrap mb-4">{reportData.noteAvskrivningsgrunder}</p>
+          </>
+        )}
+
+        {reportData.noteAnlaggningstillgangar && reportData.noteAnlaggningstillgangar.length > 0 && (
+          <>
+            <h3 className="font-semibold text-foreground mb-2">Not {reportData.useAbbreviatedForm ? '5' : '4'} – Anläggningstillgångar</h3>
+            <table className="w-full text-sm border-collapse mb-4">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-1"></th>
+                  {reportData.noteAnlaggningstillgangar.map((a, i) => (
+                    <th key={i} className="text-right py-1 px-2 font-medium">{a.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b"><td className="py-1">Ingående anskaffningsvärde</td>{reportData.noteAnlaggningstillgangar.map((a, i) => <td key={i} className="text-right py-1 px-2">{formatSEK(a.ingaende)}</td>)}</tr>
+                <tr className="border-b"><td className="py-1">Inköp</td>{reportData.noteAnlaggningstillgangar.map((a, i) => <td key={i} className="text-right py-1 px-2">{formatSEK(a.inkop)}</td>)}</tr>
+                <tr className="border-b"><td className="py-1">Försäljning/utrangering</td>{reportData.noteAnlaggningstillgangar.map((a, i) => <td key={i} className="text-right py-1 px-2">{formatSEK(a.forsaljning)}</td>)}</tr>
+                <tr className="border-b"><td className="py-1">Årets avskrivning</td>{reportData.noteAnlaggningstillgangar.map((a, i) => <td key={i} className="text-right py-1 px-2">{formatSEK(a.avskrivning)}</td>)}</tr>
+                <tr className="font-semibold"><td className="py-1">Utgående restvärde</td>{reportData.noteAnlaggningstillgangar.map((a, i) => <td key={i} className="text-right py-1 px-2">{formatSEK(a.utgaende)}</td>)}</tr>
+              </tbody>
+            </table>
+          </>
+        )}
+
+        <h3 className="font-semibold text-foreground mb-2">Ställda säkerheter</h3>
+        <p className="text-sm text-foreground mb-4">{reportData.stalldaSakerheter || 'Inga'}</p>
+
+        <h3 className="font-semibold text-foreground mb-2">Eventualförpliktelser</h3>
+        <p className="text-sm text-foreground mb-4">{reportData.eventualforpliktelser || 'Inga'}</p>
       </div>
 
       {/* Underskrifter */}
@@ -356,3 +436,6 @@ export function ReportPreview({
     </div>
   );
 }
+
+// Need React import for React.Fragment
+import React from 'react';
