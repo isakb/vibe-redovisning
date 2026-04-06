@@ -30,12 +30,21 @@ export interface K2BalanceSheet {
   totalEquityAndLiabilities: Record<number, number>;
 }
 
+export interface SoliditetBreakdown {
+  egetKapital: number;
+  obeskatadeReserver: number;
+  justeratEK: number;
+  totalAssets: number;
+  taxReceivable: number;
+}
+
 export interface FlerarsOversikt {
   years: { index: number; label: string }[];
   nettoomsattning: Record<number, number>;
   resultatEfterFinansiellaPoster: Record<number, number>;
   balansomslutning: Record<number, number>;
-  soliditet: Record<number, number>; // percentage
+  soliditet: Record<number, number>;
+  soliditetBreakdown: Record<number, SoliditetBreakdown>;
 }
 
 export interface EgetKapitalChange {
@@ -358,6 +367,7 @@ export function calculateFlerarsOversikt(
   const resultatEfterFinansiella: Record<number, number> = {};
   const balansomslutning: Record<number, number> = {};
   const soliditet: Record<number, number> = {};
+  const soliditetBreakdown: Record<number, SoliditetBreakdown> = {};
 
   for (const fy of years) {
     const yi = fy.index;
@@ -381,9 +391,10 @@ export function calculateFlerarsOversikt(
 
     const justeratEK = egetKapital + (1 - 0.206) * obeskatadeReserver;
     soliditet[yi] = totalAssets !== 0 ? Math.round((justeratEK / totalAssets) * 100) : 0;
+    soliditetBreakdown[yi] = { egetKapital, obeskatadeReserver, justeratEK, totalAssets, taxReceivable };
   }
 
-  return { years: yearLabels, nettoomsattning, resultatEfterFinansiellaPoster: resultatEfterFinansiella, balansomslutning, soliditet };
+  return { years: yearLabels, nettoomsattning, resultatEfterFinansiellaPoster: resultatEfterFinansiella, balansomslutning, soliditet, soliditetBreakdown };
 }
 
 export interface EgetKapitalForandring {
