@@ -16,12 +16,13 @@ interface TaxCalculationSectionProps {
   onChange: (data: ReportData) => void;
   company: SieCompanyInfo;
   fiscalYear: string;
+  modalOpen: boolean;
+  onModalOpenChange: (open: boolean) => void;
 }
 
-export function TaxCalculationSection({ skatteberakning, reportData, onChange, company, fiscalYear }: TaxCalculationSectionProps) {
+export function TaxCalculationSection({ skatteberakning, reportData, onChange, company, fiscalYear, modalOpen, onModalOpenChange }: TaxCalculationSectionProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
   const s = skatteberakning;
-  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <Card>
