@@ -270,6 +270,13 @@ export function ReportPreview({
           <h2 className="text-xl font-bold text-foreground mb-4">Skatteberäkning</h2>
           <table className="text-sm mb-4">
             <tbody>
+              <tr><td className="py-1 pr-8">Resultat före skatt</td><td className="text-right py-1">{formatSEK(skatteberakning.resultatForeSkatt)} kr</td></tr>
+              {skatteberakning.ejAvdragsgillaPoster !== 0 && (
+                <tr><td className="py-1 pr-8">Ej avdragsgilla kostnader</td><td className="text-right py-1">{formatSEK(skatteberakning.ejAvdragsgillaPoster)} kr</td></tr>
+              )}
+              {skatteberakning.outnyttjatUnderskott !== 0 && (
+                <tr><td className="py-1 pr-8">Outnyttjat underskott från fg. år</td><td className="text-right py-1">-{formatSEK(skatteberakning.outnyttjatUnderskott)} kr</td></tr>
+              )}
               <tr><td className="py-1 pr-8">Skattemässigt resultat</td><td className="text-right py-1">{formatSEK(skatteberakning.skattemassigResultat)} kr</td></tr>
               <tr><td className="py-1 pr-8">Skattesats</td><td className="text-right py-1">{skatteberakning.skattesats}%</td></tr>
               <tr className="font-semibold"><td className="py-1 pr-8">Skatt på årets resultat</td><td className="text-right py-1">{formatSEK(skatteberakning.skattPaAretsResultat)} kr</td></tr>

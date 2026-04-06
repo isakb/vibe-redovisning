@@ -19,6 +19,7 @@ export interface ReportData {
   
   // Skatteberäkning
   ejAvdragsgillaPoster: number;
+  outnyttjatUnderskott: number; // carry-forward loss from previous year
   skattesats: number; // default 20.6
   
   // Flerårsöversikt manuella värden
@@ -89,6 +90,7 @@ export function createDefaultReportData(aretsResultat: number, profile?: Company
     utdelning: 0,
     tillBalanseratResultat: aretsResultat,
     ejAvdragsgillaPoster: 0,
+    outnyttjatUnderskott: 0,
     skattesats: 20.6,
     flerarsOverrides: {},
     redovisningsprinciper: defaultRedovisningsprinciper,
