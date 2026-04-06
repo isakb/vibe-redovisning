@@ -217,10 +217,7 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
 
   // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
-  const kortfristigaFordringarRaw = amounts(1500, 1899);
-  // Account 2518 (betald F-skatt) is a current receivable, not a liability
-  const skattefordran = amounts(2518, 2518);
-  const kortfristigaFordringar = sumAmounts(kortfristigaFordringarRaw, skattefordran);
+  const kortfristigaFordringar = amounts(1500, 1899);
   const kassaBank = amounts(1900, 1999);
   const summaOmsattning = sumAmounts(varulager, kortfristigaFordringar, kassaBank);
 
@@ -252,10 +249,14 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
 
   // Kortfristiga skulder
-  // Exclude 2518 (betald F-skatt) — already classified as asset above
-  const kortfristigaSkulderRaw = amountsNeg(2400, 2517);
-  const kortfristigaSkulder2519 = amountsNeg(2519, 2999);
-  const kortfristigaSkulder = sumAmounts(kortfristigaSkulderRaw, kortfristigaSkulder2519);
+  const kortfristigaSkulder = amountsNeg(2400, 2999);
+  // Inject calculated skatteskuld when tax bookings are missing from SIE
+  if (taxAdjustment) {
+    const yi = yearIndices[0];
+    if (yi !== undefined) {
+      kortfristigaSkulder[yi] = (kortfristigaSkulder[yi] || 0) + taxAdjustment.skatteskuld;
+    }
+  }
   // Inject calculated skatteskuld when tax bookings are missing from SIE
   if (taxAdjustment) {
     const yi = yearIndices[0];
@@ -363,14 +364,8 @@ export function calculateFlerarsOversikt(
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran (2518, positive = asset)
-    let totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
-    
-    // For current year, add tax adjustment to assets (skattefordran from calculated tax)
-    if (yi === selectedYearIndex && taxAdjustment) {
-      totalAssets += taxAdjustment.aretsResultat + taxAdjustment.skatteskuld;
-    }
-    
+    // Balansomslutning = summa tillgångar (1000-1999)
+    const totalAssets = sumRange(ub, yi, 1000, 1999);
     balansomslutning[yi] = totalAssets;
 
     // Soliditet = justerat eget kapital / balansomslutning × 100
