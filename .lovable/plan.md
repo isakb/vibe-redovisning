@@ -1,38 +1,36 @@
 
 
-# Fix: Inject Calculated Tax into Income Statement When Missing from SIE
+# Plan: Bokföringsguide och borttagning av Förkortad-toggle
 
-## Problem
+## Översikt
 
-When `saknarSkattebokning` is true (no tax booked in SIE file), the income statement shows:
-- Skatt på årets resultat: **0 kr**
-- Årets resultat: **28 374 kr** (same as pre-tax)
+Två ändringar:
+1. **Ta bort togglen "Förkortad årsredovisning"** — den ska alltid vara av (eller logiken tas bort helt).
+2. **Lägg till en knapp "Visa bokföringsposter"** som öppnar en guide/modal med alla verifikationer som behöver bokföras för hela bokslutet (skatt, årets resultat, och utdelning om sådan finns).
 
-It should show:
-- Skatt på årets resultat: **-3 493 kr**
-- Årets resultat: **24 881 kr**
+## Ändringar
 
-The balance sheet and flerårsöversikt already receive a `taxAdjustment` — the income statement does not.
+### 1. Ta bort Förkortad-togglen
+**`src/components/ReportEditor.tsx`**: Ta bort Card-blocket (rad ~78-94) som innehåller "Förkortad årsredovisning"-switchen. Sätt `useAbbreviatedForm` till `false` permanent eller ta bort alla kodstigar som beror på det.
 
-## Root Cause
+### 2. Utöka VerificationModal med utdelningsverifikation
+**`src/components/VerificationModal.tsx`**: Lägg till en tredje sektion "Förslag på verifikation — Utdelning" som visas när `utdelning > 0`. Verifikationen:
+- Konto 2091 "Balanserat resultat" — Debit: utdelningsbeloppet
+- Konto 2898 "Outtagen vinstutdelning" — Kredit: utdelningsbeloppet
 
-`calculateIncomeStatement` reads tax from SIE accounts 8900-8989 (line 140). When no tax is booked, these are 0. The skatteberäkning is computed *after* the income statement, so the calculated tax is never fed back.
+Utdelningsbeloppet skickas in som ny prop.
 
-## Fix
+### 3. Lägg till en prominent "Visa bokföringsposter"-knapp
+**`src/components/ReportWizard.tsx`**: Lägg till en knapp i headern (bredvid "Exportera PDF") som öppnar VerificationModal. Knappen syns alltid, inte bara från TaxCalculationSection. Texten: "Visa bokföringsposter" med en BookOpen- eller FileText-ikon.
 
-**`src/components/ReportWizard.tsx`**: After computing `skatteberakning`, create an adjusted income statement using a new helper or inline logic. When `saknarSkattebokning` is true, override the "Skatt på årets resultat" amounts and "Årets resultat" amounts in the sections with the calculated values.
+Flytta modal-state (open/accepted) upp till ReportWizard så att modalen kan öppnas från headern. Skicka med `reportData.utdelning` som prop.
 
-Specifically, create a `useMemo` that derives `adjustedIncomeStatement` from `incomeStatement` + `skatteberakning`:
-- Find the last section containing "Skatt på årets resultat" and "Årets resultat"
-- Replace their amounts for `selectedYearIndex` with `-skatteberakning.skattPaAretsResultat` and `skatteberakning.aretsResultat` respectively
-- Update `totalResult` accordingly
-- Pass `adjustedIncomeStatement` instead of `incomeStatement` to `ReportEditor`, `ReportPreview`, and PDF export
+### 4. Behåll befintlig trigger i TaxCalculationSection
+TaxCalculationSection behåller sin "Visa bokföringsförslag"-knapp men den använder samma modal-state som lyfts upp.
 
-This avoids circular dependencies and keeps the core calculation pure.
+## Tekniska detaljer
 
-## Technical Details
-
-- Only the current year index is adjusted; previous year keeps its original SIE values
-- The adjustment only applies when `skatteberakning.saknarSkattebokning` is true
-- `totalResult` must also be updated so downstream consumers (like `tillBalanseratResultat`) get the correct value
+- `VerificationModal` får ny prop `utdelning: number`
+- Utdelningsverifikation visas villkorligt (`utdelning > 0`)
+- Förkortad-togglen tas bort ur UI men `useAbbreviatedForm`-fältet behålls i typen (default false) för bakåtkompatibilitet
 
