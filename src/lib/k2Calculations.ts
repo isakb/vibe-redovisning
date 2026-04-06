@@ -371,8 +371,8 @@ export function calculateFlerarsOversikt(
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar (1000-1999)
-    const totalAssets = sumRange(ub, yi, 1000, 1999);
+    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran 2518
+    const totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
     balansomslutning[yi] = totalAssets;
 
     // Soliditet = justerat eget kapital / balansomslutning × 100
