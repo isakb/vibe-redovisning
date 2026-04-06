@@ -30,6 +30,7 @@ export function ReportEditor({
   balanceSheet,
   flerarsOversikt,
   egetKapitalForandring,
+  skatteberakning,
 }: ReportEditorProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
 
