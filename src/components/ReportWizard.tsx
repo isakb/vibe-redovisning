@@ -198,10 +198,24 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               profile={companyProfile}
               onChange={handleProfileChange}
             />
+            <Button variant="outline" onClick={() => setVerModalOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Visa bokföringsposter
+            </Button>
             <Button onClick={handleExportPDF}>
               <Download className="h-4 w-4 mr-2" />
               Exportera PDF
             </Button>
+            <VerificationModal
+              open={verModalOpen}
+              onOpenChange={setVerModalOpen}
+              skatteberakning={skatteberakning}
+              company={sieData.company}
+              fiscalYear={fiscalYearLabel}
+              onAccept={() => setReportData({ ...reportData, verifikationerGodkanda: true })}
+              accepted={reportData.verifikationerGodkanda}
+              utdelning={reportData.utdelning}
+            />
           </div>
         </div>
       </div>
