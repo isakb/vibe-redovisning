@@ -37,6 +37,7 @@ export interface ReportData {
   
   // Form toggle
   useAbbreviatedForm: boolean;
+  verifikationerGodkanda: boolean;
   
   // Noter
   redovisningsprinciper: string;
@@ -115,6 +116,7 @@ export function createDefaultReportData(aretsResultat: number, profile?: Company
     skattesats: 20.6,
     flerarsOverrides: {},
     useAbbreviatedForm: false,
+    verifikationerGodkanda: false,
     redovisningsprinciper: defaultRedovisningsprinciper,
     medeltalAnstallda: '0',
     noteNettoomsattning: '',

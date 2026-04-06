@@ -301,68 +301,7 @@ export function ReportPreview({
         </table>
       </div>
 
-      {/* Skatteberäkning */}
-      {skatteberakning.saknarSkattebokning && (
-        <div className="p-8 border-b">
-          <h2 className="text-xl font-bold text-foreground mb-4">Skatteberäkning</h2>
-          <table className="text-sm mb-4">
-            <tbody>
-              <tr><td className="py-1 pr-8">Resultat före skatt</td><td className="text-right py-1">{formatSEK(skatteberakning.resultatForeSkatt)} kr</td></tr>
-              {skatteberakning.ejAvdragsgillaPoster !== 0 && (
-                <tr><td className="py-1 pr-8">Ej avdragsgilla kostnader</td><td className="text-right py-1">{formatSEK(skatteberakning.ejAvdragsgillaPoster)} kr</td></tr>
-              )}
-              {skatteberakning.outnyttjatUnderskott !== 0 && (
-                <tr><td className="py-1 pr-8">Outnyttjat underskott från fg. år</td><td className="text-right py-1">-{formatSEK(skatteberakning.outnyttjatUnderskott)} kr</td></tr>
-              )}
-              <tr><td className="py-1 pr-8">Skattemässigt resultat</td><td className="text-right py-1">{formatSEK(skatteberakning.skattemassigResultat)} kr</td></tr>
-              <tr><td className="py-1 pr-8">Skattesats</td><td className="text-right py-1">{skatteberakning.skattesats}%</td></tr>
-              <tr className="font-semibold"><td className="py-1 pr-8">Skatt på årets resultat</td><td className="text-right py-1">{formatSEK(skatteberakning.skattPaAretsResultat)} kr</td></tr>
-            </tbody>
-          </table>
-
-          <h3 className="font-semibold text-foreground mt-4 mb-2">Förslag på verifikation — Skatt</h3>
-          <table className="w-full text-sm border-collapse border mb-2">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="text-left py-1.5 px-2 font-medium">Konto</th>
-                <th className="text-right py-1.5 px-2 font-medium">Debit</th>
-                <th className="text-right py-1.5 px-2 font-medium">Kredit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {skatteberakning.skatteverifikation.map((r, i) => (
-                <tr key={i} className="border-b last:border-b-0">
-                  <td className="py-1.5 px-2">{r.konto} {r.kontonamn}</td>
-                  <td className="text-right py-1.5 px-2">{r.debit > 0 ? formatSEK(r.debit) : ''}</td>
-                  <td className="text-right py-1.5 px-2">{r.kredit > 0 ? formatSEK(r.kredit) : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-xs text-muted-foreground">Bokföringsdatum {skatteberakning.bokforingsdatum}</p>
-
-          <h3 className="font-semibold text-foreground mt-4 mb-2">Förslag på verifikation — Årets resultat</h3>
-          <table className="w-full text-sm border-collapse border mb-2">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="text-left py-1.5 px-2 font-medium">Konto</th>
-                <th className="text-right py-1.5 px-2 font-medium">Debit</th>
-                <th className="text-right py-1.5 px-2 font-medium">Kredit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {skatteberakning.resultatverifikation.map((r, i) => (
-                <tr key={i} className="border-b last:border-b-0">
-                  <td className="py-1.5 px-2">{r.konto} {r.kontonamn}</td>
-                  <td className="text-right py-1.5 px-2">{r.debit > 0 ? formatSEK(r.debit) : ''}</td>
-                  <td className="text-right py-1.5 px-2">{r.kredit > 0 ? formatSEK(r.kredit) : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-xs text-muted-foreground">Bokföringsdatum {skatteberakning.bokforingsdatum}</p>
-        </div>
-      )}
+      {/* Skatteberäkning - removed from preview, available via modal */}
 
       {/* Noter */}
       <div className="p-8 border-b">

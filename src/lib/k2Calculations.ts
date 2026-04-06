@@ -489,11 +489,17 @@ export interface Verifikationsrad {
   kredit: number;
 }
 
+export interface DetailAdjustment {
+  label: string;
+  amount: number;
+}
+
 export interface Skatteberakning {
   resultatForeSkatt: number;
   ejAvdragsgillaPoster: number;
   outnyttjatUnderskott: number;
   skattemassigResultat: number;
+  beskattningsbarInkomst: number;
   skattesats: number;
   skattPaAretsResultat: number;
   aretsResultat: number;
@@ -501,6 +507,7 @@ export interface Skatteberakning {
   skatteverifikation: Verifikationsrad[];
   resultatverifikation: Verifikationsrad[];
   bokforingsdatum: string;
+  detailAdjustments: DetailAdjustment[];
 }
 
 export function calculateSkatteberakning(
@@ -534,9 +541,22 @@ export function calculateSkatteberakning(
       }
     }
   }
-  const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla - outnyttjatUnderskott;
+  // Detail adjustments from SIE accounts
+  const detailAdjustments: DetailAdjustment[] = [];
+  const rantekostnaderSkatt = -sumRange(res, selectedYearIndex, 8423, 8423);
+  if (rantekostnaderSkatt !== 0) {
+    detailAdjustments.push({ label: 'Räntekostnader för skatter och avgifter (8423)', amount: rantekostnaderSkatt });
+  }
+  const skattefriaRantor = -sumRange(res, selectedYearIndex, 8314, 8314);
+  if (skattefriaRantor !== 0) {
+    detailAdjustments.push({ label: 'Skattefria ränteintäkter, kortfristiga tillgångar (8314)', amount: skattefriaRantor });
+  }
+  const detailSum = detailAdjustments.reduce((s, a) => s + a.amount, 0);
+
+  const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla + detailSum - outnyttjatUnderskott;
   const skattesats = reportData.skattesats / 100;
-  const skattPaAretsResultat = skattemassigResultat > 0 ? Math.round(skattemassigResultat * skattesats) : 0;
+  const beskattningsbarInkomst = skattemassigResultat > 0 ? Math.floor(skattemassigResultat / 10) * 10 : 0;
+  const skattPaAretsResultat = beskattningsbarInkomst > 0 ? Math.floor(beskattningsbarInkomst * skattesats) : 0;
   const aretsResultat = resultatForeSkatt - skattPaAretsResultat;
 
   // Check if tax booking already exists
@@ -562,6 +582,7 @@ export function calculateSkatteberakning(
     ejAvdragsgillaPoster: ejAvdragsgilla,
     outnyttjatUnderskott,
     skattemassigResultat,
+    beskattningsbarInkomst,
     skattesats: reportData.skattesats,
     skattPaAretsResultat,
     aretsResultat,
@@ -569,5 +590,6 @@ export function calculateSkatteberakning(
     skatteverifikation,
     resultatverifikation,
     bokforingsdatum,
+    detailAdjustments,
   };
 }
