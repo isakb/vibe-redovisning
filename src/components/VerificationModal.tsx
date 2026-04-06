@@ -65,6 +65,12 @@ export function VerificationModal({
                     <td className="text-right py-1.5">+ {formatSEK(s.ejAvdragsgillaPoster)} kr</td>
                   </tr>
                 )}
+                {s.detailAdjustments?.map((adj, idx) => (
+                  <tr key={`adj-${idx}`} className="border-b">
+                    <td className="py-1.5 text-muted-foreground pl-4">{adj.label}</td>
+                    <td className="text-right py-1.5">{adj.amount >= 0 ? '+ ' : '– '}{formatSEK(Math.abs(adj.amount))} kr</td>
+                  </tr>
+                ))}
                 {s.outnyttjatUnderskott !== 0 && (
                   <tr className="border-b">
                     <td className="py-1.5">Outnyttjat underskott från fg. år</td>
