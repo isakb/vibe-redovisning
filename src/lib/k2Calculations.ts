@@ -402,6 +402,7 @@ export interface Verifikationsrad {
 export interface Skatteberakning {
   resultatForeSkatt: number;
   ejAvdragsgillaPoster: number;
+  outnyttjatUnderskott: number;
   skattemassigResultat: number;
   skattesats: number;
   skattPaAretsResultat: number;
