@@ -1,6 +1,6 @@
 import { SieData } from '@/lib/sieParser';
 import { K2IncomeStatement, K2BalanceSheet, FlerarsOversikt, EgetKapitalForandring, Skatteberakning, formatSEK } from '@/lib/k2Calculations';
-import { ReportData, Signatory } from '@/lib/k2Types';
+import { ReportData, Signatory, FlerarsOverride } from '@/lib/k2Types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -80,12 +80,15 @@ export function ReportEditor({
         </CardContent>
       </Card>
 
-      {/* Flerårsöversikt (read-only) */}
+      {/* Flerårsöversikt (editable for missing data) */}
       <Card>
         <CardHeader>
           <CardTitle>Flerårsöversikt</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">
+            Värden som saknas i SIE-filen kan matas in manuellt.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -99,30 +102,44 @@ export function ReportEditor({
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b">
-                  <td className="py-2">Nettoomsättning (kr)</td>
-                  {flerarsOversikt.years.map(y => (
-                    <td key={y.index} className="text-right py-2 px-3">{formatSEK(flerarsOversikt.nettoomsattning[y.index] || 0)}</td>
-                  ))}
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2">Resultat efter finansiella poster (kr)</td>
-                  {flerarsOversikt.years.map(y => (
-                    <td key={y.index} className="text-right py-2 px-3">{formatSEK(flerarsOversikt.resultatEfterFinansiellaPoster[y.index] || 0)}</td>
-                  ))}
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2">Balansomslutning (kr)</td>
-                  {flerarsOversikt.years.map(y => (
-                    <td key={y.index} className="text-right py-2 px-3">{formatSEK(flerarsOversikt.balansomslutning[y.index] || 0)}</td>
-                  ))}
-                </tr>
-                <tr>
-                  <td className="py-2">Soliditet (%)</td>
-                  {flerarsOversikt.years.map(y => (
-                    <td key={y.index} className="text-right py-2 px-3">{flerarsOversikt.soliditet[y.index] || 0}%</td>
-                  ))}
-                </tr>
+                {([
+                  { key: 'nettoomsattning' as const, label: 'Nettoomsättning (kr)', data: flerarsOversikt.nettoomsattning },
+                  { key: 'resultatEfterFinansiellaPoster' as const, label: 'Resultat efter finansiella poster (kr)', data: flerarsOversikt.resultatEfterFinansiellaPoster },
+                  { key: 'balansomslutning' as const, label: 'Balansomslutning (kr)', data: flerarsOversikt.balansomslutning },
+                  { key: 'soliditet' as const, label: 'Soliditet (%)', data: flerarsOversikt.soliditet },
+                ]).map(row => (
+                  <tr key={row.key} className="border-b last:border-b-0">
+                    <td className="py-2">{row.label}</td>
+                    {flerarsOversikt.years.map(y => {
+                      const sieValue = row.data[y.index] || 0;
+                      const override = reportData.flerarsOverrides?.[y.index]?.[row.key];
+                      const displayValue = override !== undefined ? override : sieValue;
+                      const hasSieData = sieValue !== 0;
+
+                      return (
+                        <td key={y.index} className="text-right py-2 px-3">
+                          {hasSieData ? (
+                            <span>{row.key === 'soliditet' ? `${displayValue}%` : formatSEK(displayValue)}</span>
+                          ) : (
+                            <Input
+                              type="number"
+                              className="w-28 ml-auto text-right h-8 text-sm"
+                              value={override ?? ''}
+                              placeholder="0"
+                              onChange={e => {
+                                const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                const overrides = { ...reportData.flerarsOverrides };
+                                if (!overrides[y.index]) overrides[y.index] = {};
+                                overrides[y.index] = { ...overrides[y.index], [row.key]: val };
+                                update({ flerarsOverrides: overrides });
+                              }}
+                            />
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
