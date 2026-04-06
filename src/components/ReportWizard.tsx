@@ -4,7 +4,7 @@ import { SieData } from '@/lib/sieParser';
 import { calculateIncomeStatement, calculateBalanceSheet, calculateFlerarsOversikt, calculateEgetKapitalForandring, formatFiscalYear } from '@/lib/k2Calculations';
 import { ReportData, createDefaultReportData } from '@/lib/k2Types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Button } from '@/components/ui/button';
 import { ReportEditor } from './ReportEditor';
 import { ReportPreview } from './ReportPreview';
