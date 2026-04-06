@@ -252,7 +252,10 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
 
   // Kortfristiga skulder
-  const kortfristigaSkulder = amountsNeg(2400, 2999);
+  // Exclude 2518 (betald F-skatt) — already classified as asset above
+  const kortfristigaSkulderRaw = amountsNeg(2400, 2517);
+  const kortfristigaSkulder2519 = amountsNeg(2519, 2999);
+  const kortfristigaSkulder = sumAmounts(kortfristigaSkulderRaw, kortfristigaSkulder2519);
   // Inject calculated skatteskuld when tax bookings are missing from SIE
   if (taxAdjustment) {
     const yi = yearIndices[0];
