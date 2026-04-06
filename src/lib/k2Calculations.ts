@@ -484,7 +484,25 @@ export function calculateSkatteberakning(
   const resultatForeSkatt = totalResultInclTax - skattFromSIE;
 
   const ejAvdragsgilla = reportData.ejAvdragsgillaPoster || 0;
-  const outnyttjatUnderskott = reportData.outnyttjatUnderskott || 0;
+
+  // Auto-calculate outnyttjat underskott from previous year's result if user hasn't set it
+  let outnyttjatUnderskott = reportData.outnyttjatUnderskott || 0;
+  if (outnyttjatUnderskott === 0) {
+    const prevYearIndex = selectedYearIndex - 1;
+    const hasPrevYear = sieData.fiscalYears.some(fy => fy.index === prevYearIndex);
+    if (hasPrevYear) {
+      // Calculate previous year's result after financial items
+      const prevRorelseIntakter = -sumRange(res, prevYearIndex, 3000, 3999);
+      const prevRorelsekostnader = -sumRange(res, prevYearIndex, 4000, 7999);
+      const prevFinansiellt = -sumRange(res, prevYearIndex, 8000, 8699);
+      const prevBokslutsdispositioner = -sumRange(res, prevYearIndex, 8800, 8899);
+      const prevSkatt = -sumRange(res, prevYearIndex, 8900, 8989);
+      const prevResultat = prevRorelseIntakter + prevRorelsekostnader + prevFinansiellt + prevBokslutsdispositioner + prevSkatt;
+      if (prevResultat < 0) {
+        outnyttjatUnderskott = Math.abs(prevResultat);
+      }
+    }
+  }
   const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla - outnyttjatUnderskott;
   const skattesats = reportData.skattesats / 100;
   const skattPaAretsResultat = skattemassigResultat > 0 ? Math.round(skattemassigResultat * skattesats) : 0;
