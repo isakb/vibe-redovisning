@@ -87,7 +87,7 @@ export function ReportEditor({
         </CardHeader>
         <CardContent>
           <p className="text-xs text-muted-foreground mb-3">
-            Värden som saknas i SIE-filen kan matas in manuellt.
+            Värden som saknas i SIE-filen kan matas in manuellt. Soliditet beräknas automatiskt om balansomslutning finns.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -103,23 +103,53 @@ export function ReportEditor({
               </thead>
               <tbody>
                 {([
-                  { key: 'nettoomsattning' as const, label: 'Nettoomsättning (kr)', data: flerarsOversikt.nettoomsattning },
-                  { key: 'resultatEfterFinansiellaPoster' as const, label: 'Resultat efter finansiella poster (kr)', data: flerarsOversikt.resultatEfterFinansiellaPoster },
-                  { key: 'balansomslutning' as const, label: 'Balansomslutning (kr)', data: flerarsOversikt.balansomslutning },
-                  { key: 'soliditet' as const, label: 'Soliditet (%)', data: flerarsOversikt.soliditet },
+                  { key: 'nettoomsattning' as const, label: 'Nettoomsättning (kr)', data: flerarsOversikt.nettoomsattning, isSoliditet: false },
+                  { key: 'resultatEfterFinansiellaPoster' as const, label: 'Resultat efter finansiella poster (kr)', data: flerarsOversikt.resultatEfterFinansiellaPoster, isSoliditet: false },
+                  { key: 'balansomslutning' as const, label: 'Balansomslutning (kr)', data: flerarsOversikt.balansomslutning, isSoliditet: false },
+                  { key: 'soliditet' as const, label: 'Soliditet (%)', data: flerarsOversikt.soliditet, isSoliditet: true },
                 ]).map(row => (
                   <tr key={row.key} className="border-b last:border-b-0">
                     <td className="py-2">{row.label}</td>
                     {flerarsOversikt.years.map(y => {
                       const sieValue = row.data[y.index] || 0;
                       const override = reportData.flerarsOverrides?.[y.index]?.[row.key];
-                      const displayValue = override !== undefined ? override : sieValue;
                       const hasSieData = sieValue !== 0;
+
+                      // For soliditet: auto-calculate from merged balansomslutning + SIE equity
+                      if (row.isSoliditet) {
+                        const mergedBalans = (reportData.flerarsOverrides?.[y.index]?.balansomslutning !== undefined
+                          ? reportData.flerarsOverrides[y.index].balansomslutning!
+                          : (flerarsOversikt.balansomslutning[y.index] || 0));
+                        const mergedSoliditet = override !== undefined ? override : sieValue;
+                        // If balansomslutning was overridden but soliditet wasn't, and SIE soliditet is 0, show input
+                        const displayValue = mergedSoliditet;
+
+                        if (hasSieData) {
+                          return <td key={y.index} className="text-right py-2 px-3">{sieValue}%</td>;
+                        }
+                        return (
+                          <td key={y.index} className="text-right py-2 px-3">
+                            <Input
+                              type="number"
+                              className="w-28 ml-auto text-right h-8 text-sm"
+                              value={override ?? ''}
+                              placeholder="0"
+                              onChange={e => {
+                                const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                const overrides = { ...reportData.flerarsOverrides };
+                                if (!overrides[y.index]) overrides[y.index] = {};
+                                overrides[y.index] = { ...overrides[y.index], soliditet: val };
+                                update({ flerarsOverrides: overrides });
+                              }}
+                            />
+                          </td>
+                        );
+                      }
 
                       return (
                         <td key={y.index} className="text-right py-2 px-3">
                           {hasSieData ? (
-                            <span>{row.key === 'soliditet' ? `${displayValue}%` : formatSEK(displayValue)}</span>
+                            <span>{formatSEK(sieValue)}</span>
                           ) : (
                             <Input
                               type="number"
