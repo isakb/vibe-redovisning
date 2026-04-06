@@ -25,6 +25,7 @@ export function VerificationModal({
   fiscalYear,
   onAccept,
   accepted,
+  utdelning = 0,
 }: VerificationModalProps) {
   const s = skatteberakning;
 
