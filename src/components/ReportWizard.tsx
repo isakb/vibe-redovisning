@@ -73,14 +73,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
   
   const incomeStatement = useMemo(() => calculateIncomeStatement(sieData, yearIndices), [sieData, selectedYearIndex]);
-  const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
-
-  // Update tillBalanseratResultat when year changes
-  useEffect(() => {
-    if (reportData.tillBalanseratResultat === 0 && aretsResultat !== 0) {
-      setReportData({ ...reportData, tillBalanseratResultat: aretsResultat });
-    }
-  }, [selectedYearIndex, aretsResultat]);
+  // aretsResultat will be set after adjustedIncomeStatement is computed below
 
   const skatteberakning = useMemo(
     () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
