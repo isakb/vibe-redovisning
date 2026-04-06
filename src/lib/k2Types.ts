@@ -107,9 +107,7 @@ export function createDefaultReportData(aretsResultat: number, profile?: Company
   return {
     verksamhetsbeskrivning: profile?.verksamhetsbeskrivning || 'Bolaget bedriver konsultverksamhet inom IT och teknik.',
     vasEntligaHandelser: '',
-    bolatetsSate: profile?.bolagetsSate || '',
-    get bolagetsSate() { return this.bolatetsSate; },
-    set bolagetsSate(v: string) { this.bolatetsSate = v; },
+    bolagetsSate: profile?.bolagetsSate || '',
     utdelning: 0,
     tillBalanseratResultat: aretsResultat,
     ejAvdragsgillaPoster: 0,
