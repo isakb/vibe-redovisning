@@ -37,6 +37,11 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
     createDefaultReportData(aretsResultat)
   );
 
+  const skatteberakning = useMemo(
+    () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
+    [incomeStatement, reportData, sieData, selectedYearIndex]
+  );
+
   const selectedFY = sieData.fiscalYears.find(fy => fy.index === selectedYearIndex);
   const fiscalYearLabel = selectedFY ? formatFiscalYear(selectedFY) : '';
 
