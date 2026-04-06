@@ -182,7 +182,7 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   return { sections, totalResult: aretsResultat, bruttoresultat };
 }
 
-export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2BalanceSheet {
+export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxAdjustment?: { aretsResultat: number; skatteskuld: number }): K2BalanceSheet {
   const ub = data.closingBalances;
   const amounts = (from: number, to: number) => {
     const result: Record<number, number> = {};
