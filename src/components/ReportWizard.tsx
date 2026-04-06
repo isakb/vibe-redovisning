@@ -73,7 +73,6 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
   
   const incomeStatement = useMemo(() => calculateIncomeStatement(sieData, yearIndices), [sieData, selectedYearIndex]);
-  const flerarsOversikt = useMemo(() => calculateFlerarsOversikt(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
   const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
 
   // Update tillBalanseratResultat when year changes
@@ -98,6 +97,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
   }, [skatteberakning]);
 
   const balanceSheet = useMemo(() => calculateBalanceSheet(sieData, yearIndices, taxAdjustment), [sieData, selectedYearIndex, taxAdjustment]);
+  const flerarsOversikt = useMemo(() => calculateFlerarsOversikt(sieData, selectedYearIndex, taxAdjustment), [sieData, selectedYearIndex, taxAdjustment]);
 
   const egetKapitalForandring = useMemo(
     () => calculateEgetKapitalForandring(

@@ -217,7 +217,10 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
 
   // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
-  const kortfristigaFordringar = amounts(1500, 1899);
+  const kortfristigaFordringarRaw = amounts(1500, 1899);
+  // Account 2518 (betald F-skatt) is a current receivable, not a liability
+  const skattefordran = amounts(2518, 2518);
+  const kortfristigaFordringar = sumAmounts(kortfristigaFordringarRaw, skattefordran);
   const kassaBank = amounts(1900, 1999);
   const summaOmsattning = sumAmounts(varulager, kortfristigaFordringar, kassaBank);
 
@@ -249,7 +252,10 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
 
   // Kortfristiga skulder
-  const kortfristigaSkulder = amountsNeg(2400, 2999);
+  // Exclude 2518 (betald F-skatt) — already classified as asset above
+  const kortfristigaSkulderRaw = amountsNeg(2400, 2517);
+  const kortfristigaSkulder2519 = amountsNeg(2519, 2999);
+  const kortfristigaSkulder = sumAmounts(kortfristigaSkulderRaw, kortfristigaSkulder2519);
   // Inject calculated skatteskuld when tax bookings are missing from SIE
   if (taxAdjustment) {
     const yi = yearIndices[0];
@@ -325,7 +331,11 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   };
 }
 
-export function calculateFlerarsOversikt(data: SieData, selectedYearIndex: number = 0): FlerarsOversikt {
+export function calculateFlerarsOversikt(
+  data: SieData,
+  selectedYearIndex: number = 0,
+  taxAdjustment?: { aretsResultat: number; skatteskuld: number }
+): FlerarsOversikt {
   // Show up to 4 years ending at the selected year
   const years = data.fiscalYears
     .filter(fy => fy.index <= selectedYearIndex && fy.index >= selectedYearIndex - 3)
@@ -353,14 +363,28 @@ export function calculateFlerarsOversikt(data: SieData, selectedYearIndex: numbe
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar
-    balansomslutning[yi] = sumRange(ub, yi, 1000, 1999);
+    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran (2518, positive = asset)
+    let totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
+    
+    // For current year, add tax adjustment to assets (skattefordran from calculated tax)
+    if (yi === selectedYearIndex && taxAdjustment) {
+      totalAssets += taxAdjustment.aretsResultat + taxAdjustment.skatteskuld;
+    }
+    
+    balansomslutning[yi] = totalAssets;
 
-    // Soliditet = eget kapital / balansomslutning * 100
-    // Eget kapital is stored as negative (credit) in SIE, negate to get accounting value
-    const egetKapital = -sumRange(ub, yi, 2080, 2099);
-    const totalAssets = balansomslutning[yi];
-    soliditet[yi] = totalAssets !== 0 ? Math.round((egetKapital / totalAssets) * 100) : 0;
+    // Soliditet = justerat eget kapital / balansomslutning × 100
+    // Justerat EK = EK + (1 - skattesats) × obeskattade reserver
+    let egetKapital = -sumRange(ub, yi, 2080, 2099);
+    const obeskatadeReserver = -sumRange(ub, yi, 2100, 2149);
+    
+    // For current year with tax adjustment, add calculated årets resultat to EK
+    if (yi === selectedYearIndex && taxAdjustment) {
+      egetKapital += taxAdjustment.aretsResultat;
+    }
+    
+    const justeratEK = egetKapital + (1 - 0.206) * obeskatadeReserver;
+    soliditet[yi] = totalAssets !== 0 ? Math.round((justeratEK / totalAssets) * 100) : 0;
   }
 
   return { years: yearLabels, nettoomsattning, resultatEfterFinansiellaPoster: resultatEfterFinansiella, balansomslutning, soliditet };
@@ -484,7 +508,25 @@ export function calculateSkatteberakning(
   const resultatForeSkatt = totalResultInclTax - skattFromSIE;
 
   const ejAvdragsgilla = reportData.ejAvdragsgillaPoster || 0;
-  const outnyttjatUnderskott = reportData.outnyttjatUnderskott || 0;
+
+  // Auto-calculate outnyttjat underskott from previous year's result if user hasn't set it
+  let outnyttjatUnderskott = reportData.outnyttjatUnderskott || 0;
+  if (outnyttjatUnderskott === 0) {
+    const prevYearIndex = selectedYearIndex - 1;
+    const hasPrevYear = sieData.fiscalYears.some(fy => fy.index === prevYearIndex);
+    if (hasPrevYear) {
+      // Calculate previous year's result after financial items
+      const prevRorelseIntakter = -sumRange(res, prevYearIndex, 3000, 3999);
+      const prevRorelsekostnader = -sumRange(res, prevYearIndex, 4000, 7999);
+      const prevFinansiellt = -sumRange(res, prevYearIndex, 8000, 8699);
+      const prevBokslutsdispositioner = -sumRange(res, prevYearIndex, 8800, 8899);
+      const prevSkatt = -sumRange(res, prevYearIndex, 8900, 8989);
+      const prevResultat = prevRorelseIntakter + prevRorelsekostnader + prevFinansiellt + prevBokslutsdispositioner + prevSkatt;
+      if (prevResultat < 0) {
+        outnyttjatUnderskott = Math.abs(prevResultat);
+      }
+    }
+  }
   const skattemassigResultat = resultatForeSkatt + ejAvdragsgilla - outnyttjatUnderskott;
   const skattesats = reportData.skattesats / 100;
   const skattPaAretsResultat = skattemassigResultat > 0 ? Math.round(skattemassigResultat * skattesats) : 0;
