@@ -128,6 +128,7 @@ export function ReportWizard({ sieData, onReset }: ReportWizardProps) {
               flerarsOversikt={flerarsOversikt}
               egetKapitalForandring={egetKapitalForandring}
               fiscalYears={sieData.fiscalYears}
+              skatteberakning={skatteberakning}
             />
           </TabsContent>
         </Tabs>
