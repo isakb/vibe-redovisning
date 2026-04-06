@@ -8,10 +8,20 @@ export interface FlerarsOverride {
   soliditet?: number;
 }
 
+export interface NoteAnlaggningstillgang {
+  label: string;
+  ingaende: number;
+  inkop: number;
+  forsaljning: number;
+  avskrivning: number;
+  utgaende: number;
+}
+
 export interface ReportData {
   // Förvaltningsberättelse
   verksamhetsbeskrivning: string;
   vasEntligaHandelser: string;
+  bolagetsSate: string;
   
   // Resultatdisposition
   utdelning: number;
@@ -25,9 +35,18 @@ export interface ReportData {
   // Flerårsöversikt manuella värden
   flerarsOverrides: Record<number, FlerarsOverride>;
   
+  // Form toggle
+  useAbbreviatedForm: boolean;
+  
   // Noter
   redovisningsprinciper: string;
   medeltalAnstallda: string;
+  noteNettoomsattning: string; // Not 3: description of revenue
+  noteAvskrivningsgrunder: string; // Not 4
+  noteAnlaggningstillgangar: NoteAnlaggningstillgang[]; // Not 5
+  stalldaSakerheter: string; // Not 6
+  eventualforpliktelser: string; // Not 7
+  egnaAktier: string;
   
   // Underskrifter
   signatories: Signatory[];
@@ -59,6 +78,7 @@ export interface CompanyProfile {
   verksamhetsbeskrivning: string;
   signatories: Signatory[];
   plats: string;
+  bolagetsSate: string;
 }
 
 export function loadCompanyProfile(orgNumber: string): CompanyProfile | null {
@@ -87,14 +107,24 @@ export function createDefaultReportData(aretsResultat: number, profile?: Company
   return {
     verksamhetsbeskrivning: profile?.verksamhetsbeskrivning || 'Bolaget bedriver konsultverksamhet inom IT och teknik.',
     vasEntligaHandelser: '',
+    bolatetsSate: profile?.bolagetsSate || '',
+    get bolagetsSate() { return this.bolatetsSate; },
+    set bolagetsSate(v: string) { this.bolatetsSate = v; },
     utdelning: 0,
     tillBalanseratResultat: aretsResultat,
     ejAvdragsgillaPoster: 0,
     outnyttjatUnderskott: 0,
     skattesats: 20.6,
     flerarsOverrides: {},
+    useAbbreviatedForm: false,
     redovisningsprinciper: defaultRedovisningsprinciper,
     medeltalAnstallda: '0',
+    noteNettoomsattning: '',
+    noteAvskrivningsgrunder: '',
+    noteAnlaggningstillgangar: [],
+    stalldaSakerheter: 'Inga',
+    eventualforpliktelser: 'Inga',
+    egnaAktier: '',
     signatories: profile?.signatories?.length ? [...profile.signatories] : [{ name: '', role: 'Styrelseledamot' }],
     signDate: new Date().toISOString().slice(0, 10),
     plats: profile?.plats || '',
