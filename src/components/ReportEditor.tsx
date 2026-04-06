@@ -403,6 +403,8 @@ export function ReportEditor({
         fiscalYear={sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)
           ? `${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.startDate.slice(0,4)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.startDate.slice(4,6)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.startDate.slice(6,8)} – ${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.endDate.slice(0,4)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.endDate.slice(4,6)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.endDate.slice(6,8)}`
           : ''}
+        modalOpen={verModalOpen}
+        onModalOpenChange={onVerModalOpenChange}
       />
 
       {/* Noter */}
