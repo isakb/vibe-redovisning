@@ -1,5 +1,13 @@
 // Types for the editable K2 report form
 
+// Manual overrides for flerårsöversikt (keyed by yearIndex, e.g. -2, -3)
+export interface FlerarsOverride {
+  nettoomsattning?: number;
+  resultatEfterFinansiellaPoster?: number;
+  balansomslutning?: number;
+  soliditet?: number;
+}
+
 export interface ReportData {
   // Förvaltningsberättelse
   verksamhetsbeskrivning: string;
@@ -12,6 +20,9 @@ export interface ReportData {
   // Skatteberäkning
   ejAvdragsgillaPoster: number;
   skattesats: number; // default 20.6
+  
+  // Flerårsöversikt manuella värden
+  flerarsOverrides: Record<number, FlerarsOverride>;
   
   // Noter
   redovisningsprinciper: string;
