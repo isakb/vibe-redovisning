@@ -543,7 +543,7 @@ export function calculateSkatteberakning(
   }
   // Detail adjustments from SIE accounts
   const detailAdjustments: DetailAdjustment[] = [];
-  const rantekostnaderSkatt = -sumRange(res, selectedYearIndex, 8423, 8423);
+  const rantekostnaderSkatt = sumRange(res, selectedYearIndex, 8423, 8423);
   if (rantekostnaderSkatt !== 0) {
     detailAdjustments.push({ label: 'Räntekostnader för skatter och avgifter (8423)', amount: rantekostnaderSkatt });
   }
