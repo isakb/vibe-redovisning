@@ -131,6 +131,12 @@ export function FileUpload({ onFileParsed }: FileUploadProps) {
             )}
           </CardContent>
         </Card>
+
+        <div className="text-center space-y-1 text-xs text-muted-foreground/70">
+          <p>All processing happens entirely in your browser — no data is sent to any server.</p>
+          <p>Company details and report settings are saved locally in your browser's storage.</p>
+          <p>Your SIE files never leave your device.</p>
+        </div>
       </div>
     </div>
   );
