@@ -19,6 +19,7 @@ interface ReportEditorProps {
   balanceSheet: K2BalanceSheet;
   flerarsOversikt: FlerarsOversikt;
   egetKapitalForandring: EgetKapitalForandring;
+  skatteberakning: Skatteberakning;
 }
 
 export function ReportEditor({
