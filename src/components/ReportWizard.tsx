@@ -11,7 +11,8 @@ import { ReportEditor } from './ReportEditor';
 import { ReportPreview } from './ReportPreview';
 import { CompanyProfileEditor } from './CompanyProfile';
 import { generatePDF } from '@/lib/pdfExport';
-import { Download, Eye, Edit, ArrowLeft } from 'lucide-react';
+import { Download, Eye, Edit, ArrowLeft, FileText } from 'lucide-react';
+import { VerificationModal } from './VerificationModal';
 
 interface ReportWizardProps {
   sieData: SieData;
@@ -29,6 +30,7 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
 
   const [selectedYearIndex, setSelectedYearIndex] = useState(() => sortedYears[0]?.index ?? 0);
   const [activeTab, setActiveTab] = useState('edit');
+  const [verModalOpen, setVerModalOpen] = useState(false);
 
   // Per-year report data
   const [yearReports, setYearReports] = useState<Record<number, ReportData>>(() => {
@@ -196,10 +198,24 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               profile={companyProfile}
               onChange={handleProfileChange}
             />
+            <Button variant="outline" onClick={() => setVerModalOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Visa bokföringsposter
+            </Button>
             <Button onClick={handleExportPDF}>
               <Download className="h-4 w-4 mr-2" />
               Exportera PDF
             </Button>
+            <VerificationModal
+              open={verModalOpen}
+              onOpenChange={setVerModalOpen}
+              skatteberakning={skatteberakning}
+              company={sieData.company}
+              fiscalYear={fiscalYearLabel}
+              onAccept={() => setReportData({ ...reportData, verifikationerGodkanda: true })}
+              accepted={reportData.verifikationerGodkanda}
+              utdelning={reportData.utdelning}
+            />
           </div>
         </div>
       </div>
@@ -229,6 +245,8 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
               egetKapitalForandring={egetKapitalForandring}
               skatteberakning={skatteberakning}
               selectedYearIndex={selectedYearIndex}
+              verModalOpen={verModalOpen}
+              onVerModalOpenChange={setVerModalOpen}
             />
           </TabsContent>
           

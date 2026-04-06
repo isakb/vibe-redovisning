@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
+
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { FinancialTable } from './FinancialTable';
@@ -24,6 +24,8 @@ interface ReportEditorProps {
   egetKapitalForandring: EgetKapitalForandring;
   skatteberakning: Skatteberakning;
   selectedYearIndex: number;
+  verModalOpen: boolean;
+  onVerModalOpenChange: (open: boolean) => void;
 }
 
 export function ReportEditor({
@@ -36,6 +38,8 @@ export function ReportEditor({
   egetKapitalForandring,
   skatteberakning,
   selectedYearIndex,
+  verModalOpen,
+  onVerModalOpenChange,
 }: ReportEditorProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
   const yi = selectedYearIndex;
@@ -75,23 +79,6 @@ export function ReportEditor({
         </Alert>
       )}
 
-      {/* Form toggle */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="font-semibold">Förkortad årsredovisning</Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Visar bruttoresultat istället för detaljerade intäkter/kostnader. Not om nettoomsättning blir obligatorisk.
-              </p>
-            </div>
-            <Switch
-              checked={reportData.useAbbreviatedForm}
-              onCheckedChange={(checked) => update({ useAbbreviatedForm: checked })}
-            />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Förvaltningsberättelse */}
       <Card>
@@ -416,6 +403,8 @@ export function ReportEditor({
         fiscalYear={sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)
           ? `${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.startDate.slice(0,4)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.startDate.slice(4,6)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.startDate.slice(6,8)} – ${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.endDate.slice(0,4)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.endDate.slice(4,6)}-${sieData.fiscalYears.find(fy => fy.index === selectedYearIndex)!.endDate.slice(6,8)}`
           : ''}
+        modalOpen={verModalOpen}
+        onModalOpenChange={onVerModalOpenChange}
       />
 
       {/* Noter */}

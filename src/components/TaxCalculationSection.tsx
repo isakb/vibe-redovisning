@@ -7,7 +7,6 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle, FileText } from 'lucide-react';
-import { useState } from 'react';
 import { VerificationModal } from './VerificationModal';
 
 interface TaxCalculationSectionProps {
@@ -16,12 +15,13 @@ interface TaxCalculationSectionProps {
   onChange: (data: ReportData) => void;
   company: SieCompanyInfo;
   fiscalYear: string;
+  modalOpen: boolean;
+  onModalOpenChange: (open: boolean) => void;
 }
 
-export function TaxCalculationSection({ skatteberakning, reportData, onChange, company, fiscalYear }: TaxCalculationSectionProps) {
+export function TaxCalculationSection({ skatteberakning, reportData, onChange, company, fiscalYear, modalOpen, onModalOpenChange }: TaxCalculationSectionProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
   const s = skatteberakning;
-  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <Card>
@@ -167,7 +167,7 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
           <>
             <Separator />
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => setModalOpen(true)}>
+              <Button variant="outline" onClick={() => onModalOpenChange(true)}>
                 <FileText className="h-4 w-4 mr-1" />
                 Visa bokföringsförslag
               </Button>
@@ -180,12 +180,13 @@ export function TaxCalculationSection({ skatteberakning, reportData, onChange, c
             </div>
             <VerificationModal
               open={modalOpen}
-              onOpenChange={setModalOpen}
+              onOpenChange={onModalOpenChange}
               skatteberakning={s}
               company={company}
               fiscalYear={fiscalYear}
               onAccept={() => update({ verifikationerGodkanda: true })}
               accepted={reportData.verifikationerGodkanda}
+              utdelning={reportData.utdelning}
             />
           </>
         )}

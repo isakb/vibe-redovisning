@@ -14,6 +14,7 @@ interface VerificationModalProps {
   fiscalYear: string;
   onAccept: () => void;
   accepted: boolean;
+  utdelning?: number;
 }
 
 export function VerificationModal({
@@ -24,6 +25,7 @@ export function VerificationModal({
   fiscalYear,
   onAccept,
   accepted,
+  utdelning = 0,
 }: VerificationModalProps) {
   const s = skatteberakning;
 
@@ -148,6 +150,38 @@ export function VerificationModal({
             </table>
             <p className="text-xs text-muted-foreground mt-1">Bokföringsdatum {s.bokforingsdatum}</p>
           </div>
+
+          {/* Verifikation: Utdelning */}
+          {utdelning > 0 && (
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Förslag på verifikation — Utdelning</h3>
+              <table className="w-full text-sm border">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left py-2 px-3 font-medium">Konto</th>
+                    <th className="text-left py-2 px-3 font-medium">Kontonamn</th>
+                    <th className="text-right py-2 px-3 font-medium">Debit</th>
+                    <th className="text-right py-2 px-3 font-medium">Kredit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-2 px-3 font-mono">2091</td>
+                    <td className="py-2 px-3">Balanserat resultat</td>
+                    <td className="text-right py-2 px-3">{formatSEK(utdelning)}</td>
+                    <td className="text-right py-2 px-3"></td>
+                  </tr>
+                  <tr className="border-b last:border-b-0">
+                    <td className="py-2 px-3 font-mono">2898</td>
+                    <td className="py-2 px-3">Outtagen vinstutdelning</td>
+                    <td className="text-right py-2 px-3"></td>
+                    <td className="text-right py-2 px-3">{formatSEK(utdelning)}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-muted-foreground mt-1">Bokförs efter beslut på årsstämma</p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
