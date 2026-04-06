@@ -32,19 +32,30 @@ const Index = () => {
     setSavedReports({});
   }, []);
 
-  if (sieData && companyProfile) {
-    return (
-      <ReportWizard
-        sieData={sieData}
-        companyProfile={companyProfile}
-        onCompanyProfileChange={setCompanyProfile}
-        savedReports={savedReports}
-        onReset={handleReset}
-      />
-    );
-  }
-
-  return <FileUpload onFileParsed={handleFileParsed} />;
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="flex-1 flex flex-col">
+        {sieData && companyProfile ? (
+          <ReportWizard
+            sieData={sieData}
+            companyProfile={companyProfile}
+            onCompanyProfileChange={setCompanyProfile}
+            savedReports={savedReports}
+            onReset={handleReset}
+          />
+        ) : (
+          <FileUpload onFileParsed={handleFileParsed} />
+        )}
+      </div>
+      <footer className="py-3 px-4 text-center text-xs text-muted-foreground/60 border-t border-border/30">
+        En gratis tjänst med öppen källkod från teamet bakom{' '}
+        <a href="https://www.skatteguru.se/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+          Skatteguru
+        </a>
+        {' '}— Sveriges ledande skatteberäkningstjänst för K4-blanketten.
+      </footer>
+    </div>
+  );
 };
 
 export default Index;
