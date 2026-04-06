@@ -311,7 +311,7 @@ export interface EgetKapitalForandring {
   rows: EgetKapitalChange[];
 }
 
-export function calculateEgetKapitalForandring(data: SieData, selectedYearIndex: number = 0): EgetKapitalForandring {
+export function calculateEgetKapitalForandring(data: SieData, selectedYearIndex: number = 0, overrideAretsResultat?: number): EgetKapitalForandring {
   const ub = data.closingBalances;
   const ib = data.openingBalances;
 
@@ -328,8 +328,9 @@ export function calculateEgetKapitalForandring(data: SieData, selectedYearIndex:
     const prevResult = -getVal(ib, yi, 2099, 2099);
     
     const aktiekapitalUB = -getVal(ub, yi, 2080, 2089);
+    // Use override if provided (from skatteberäkning), otherwise use SIE value
+    const aretsResultatUB = overrideAretsResultat !== undefined ? overrideAretsResultat : -getVal(ub, yi, 2099, 2099);
     const balUB = -getVal(ub, yi, 2090, 2098);
-    const aretsResultatUB = -getVal(ub, yi, 2099, 2099);
 
     rows.push({
       label: 'Belopp vid årets ingång',
