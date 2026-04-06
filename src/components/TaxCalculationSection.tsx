@@ -18,9 +18,10 @@ interface TaxCalculationSectionProps {
   fiscalYear: string;
 }
 
-export function TaxCalculationSection({ skatteberakning, reportData, onChange }: TaxCalculationSectionProps) {
+export function TaxCalculationSection({ skatteberakning, reportData, onChange, company, fiscalYear }: TaxCalculationSectionProps) {
   const update = (partial: Partial<ReportData>) => onChange({ ...reportData, ...partial });
   const s = skatteberakning;
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <Card>
