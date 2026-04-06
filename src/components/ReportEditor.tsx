@@ -174,7 +174,36 @@ export function ReportEditor({
                       if (row.isSoliditet) {
                         const mergedSoliditet = override !== undefined ? override : sieValue;
                         if (hasSieData) {
-                          return <td key={y.index} className="text-right py-2 px-3">{sieValue}%</td>;
+                          const bd = flerarsOversikt.soliditetBreakdown?.[y.index];
+                          return (
+                            <td key={y.index} className="text-right py-2 px-3">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger className="cursor-help underline decoration-dotted underline-offset-4">
+                                    {sieValue}%
+                                  </TooltipTrigger>
+                                  {bd && (
+                                    <TooltipContent side="top" className="text-xs space-y-1 max-w-xs">
+                                      <p className="font-semibold mb-1">Soliditet = Justerat EK / Balansomslutning</p>
+                                      <p>Eget kapital: {formatSEK(bd.egetKapital)} kr</p>
+                                      {bd.obeskatadeReserver !== 0 && (
+                                        <p>Obeskattade reserver: {formatSEK(bd.obeskatadeReserver)} kr</p>
+                                      )}
+                                      {bd.obeskatadeReserver !== 0 && (
+                                        <p>× (1 − 20,6%) = {formatSEK((1 - 0.206) * bd.obeskatadeReserver)} kr</p>
+                                      )}
+                                      <p className="font-medium">Justerat EK: {formatSEK(bd.justeratEK)} kr</p>
+                                      <p>Balansomslutning: {formatSEK(bd.totalAssets)} kr</p>
+                                      {bd.taxReceivable > 0 && (
+                                        <p className="text-muted-foreground">(varav skattefordran: {formatSEK(bd.taxReceivable)} kr)</p>
+                                      )}
+                                      <p className="font-medium pt-1 border-t">{formatSEK(bd.justeratEK)} / {formatSEK(bd.totalAssets)} = {sieValue}%</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
+                            </td>
+                          );
                         }
                         return (
                           <td key={y.index} className="text-right py-2 px-3">
