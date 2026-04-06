@@ -177,8 +177,9 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
       title: '',
       items: [
         { label: 'Resultat efter finansiella poster', amounts: resultatEfterFinansiella, isBold: true },
+        ...(hasExtraordinara ? [{ label: 'Extraordinära poster', amounts: extraordinaraPoster }] : []),
         ...(hasBokslutsdispositioner ? [{ label: 'Bokslutsdispositioner', amounts: bokslutsdispositioner }] : []),
-        ...(hasBokslutsdispositioner ? [{ label: 'Resultat före skatt', amounts: resultatForeSkatt, isBold: true }] : []),
+        ...(hasBokslutsdispositioner || hasExtraordinara ? [{ label: 'Resultat före skatt', amounts: resultatForeSkatt, isBold: true }] : []),
         { label: 'Skatt på årets resultat', amounts: skatt },
         { label: 'Årets resultat', amounts: aretsResultat, isBold: true },
       ],
