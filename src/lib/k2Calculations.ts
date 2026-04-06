@@ -191,6 +191,14 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
     }
     return result;
   };
+  // Credit accounts (2xxx) are stored as negative in SIE; negate to show as positive
+  const amountsNeg = (from: number, to: number) => {
+    const result: Record<number, number> = {};
+    for (const yi of yearIndices) {
+      result[yi] = -sumRange(ub, yi, from, to);
+    }
+    return result;
+  };
 
   const sumAmounts = (...ranges: Record<number, number>[]): Record<number, number> => {
     const result: Record<number, number> = {};
