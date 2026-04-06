@@ -292,7 +292,7 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
       title: 'Omsättningstillgångar',
       items: [
         { label: 'Varulager m.m.', amounts: varulager, indent: 1 },
-        { label: 'Kortfristiga fordringar', amounts: kortfristigaFordringar, indent: 1 },
+        { label: 'Kortfristiga fordringar', amounts: summaKortfristigaFordringar, indent: 1 },
         { label: 'Kassa och bank', amounts: kassaBank, indent: 1 },
         { label: 'Summa omsättningstillgångar', amounts: summaOmsattning, isBold: true, isSubtotal: true },
       ],
