@@ -244,16 +244,14 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   }
   const summaEgetKapital = sumAmounts(aktiekapital, balanserat, aretsResultatEK);
 
-  // Obeskattade reserver (2100-2149)
-  const obeskatadeReserver = amountsNeg(2100, 2149);
+  // Obeskattade reserver (2100-2199, includes 2150 ackumulerade överavskrivningar etc.)
+  const obeskatadeReserver = amountsNeg(2100, 2199);
 
   // Avsättningar (2200-2299)
   const avsattningar = amountsNeg(2200, 2299);
 
-  // Långfristiga skulder (2300-2399 — was 2100-2399, now remapped)
-  const langfristigaSkulder = amountsNeg(2150, 2199);
-  const langfristigaSkulder2 = amountsNeg(2300, 2399);
-  const summaLangfristiga = sumAmounts(langfristigaSkulder, langfristigaSkulder2);
+  // Långfristiga skulder (2300-2399)
+  const summaLangfristiga = amountsNeg(2300, 2399);
 
   // Kortfristiga skulder
   const kortfristigaSkulder = amountsNeg(2400, 2999);
