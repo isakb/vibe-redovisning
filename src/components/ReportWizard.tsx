@@ -102,6 +102,15 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
     };
   }, [incomeStatement, skatteberakning, selectedYearIndex]);
 
+  const aretsResultat = adjustedIncomeStatement.totalResult[selectedYearIndex] || 0;
+
+  // Update tillBalanseratResultat when year changes
+  useEffect(() => {
+    if (reportData.tillBalanseratResultat === 0 && aretsResultat !== 0) {
+      setReportData({ ...reportData, tillBalanseratResultat: aretsResultat });
+    }
+  }, [selectedYearIndex, aretsResultat]);
+
   // When tax bookings are missing, inject calculated tax into balance sheet
   const taxAdjustment = useMemo(() => {
     if (!skatteberakning.saknarSkattebokning) return undefined;
