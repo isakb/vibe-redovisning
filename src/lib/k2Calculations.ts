@@ -96,8 +96,10 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
 
   // Rörelseintäkter
   const nettoomsattning = amounts(3000, 3799);
+  const aktiveratArbete = amounts(3800, 3899);
   const ovrigaRorelseintakter = amounts(3900, 3999);
-  const summaRorelseintakter = sumAmounts(nettoomsattning, ovrigaRorelseintakter);
+  const hasAktiveratArbete = yearIndices.some(yi => (aktiveratArbete[yi] || 0) !== 0);
+  const summaRorelseintakter = sumAmounts(nettoomsattning, aktiveratArbete, ovrigaRorelseintakter);
 
   // Rörelsekostnader (these are costs, so they're positive in SIE = negative for display)
   const handelsvaror = amounts(4000, 4999);
