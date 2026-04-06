@@ -53,7 +53,22 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
   const handleProfileChange = useCallback((profile: CompanyProfile) => {
     saveCompanyProfile(profile);
     onCompanyProfileChange(profile);
-  }, [onCompanyProfileChange]);
+    // Sync profile fields into current year's report
+    setYearReports(prev => {
+      const current = prev[selectedYearIndex];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [selectedYearIndex]: {
+          ...current,
+          verksamhetsbeskrivning: profile.verksamhetsbeskrivning,
+          signatories: [...profile.signatories],
+          plats: profile.plats,
+          bolagetsSate: profile.bolagetsSate,
+        },
+      };
+    });
+  }, [onCompanyProfileChange, selectedYearIndex]);
 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
   
