@@ -189,6 +189,20 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   return { sections, totalResult: aretsResultat, bruttoresultat };
 }
 
+function getNetTaxPosition(
+  balances: SieBalance[],
+  yearIndex: number,
+  extraTaxLiability: number = 0
+): { receivable: number; liability: number } {
+  // K2 presents tax as a net position: paid F-skatt offset against current/final tax.
+  // A positive net balance becomes a receivable under short-term receivables.
+  const rawTaxBalance = sumRange(balances, yearIndex, 2510, 2519) - extraTaxLiability;
+  return {
+    receivable: rawTaxBalance > 0 ? rawTaxBalance : 0,
+    liability: rawTaxBalance < 0 ? Math.abs(rawTaxBalance) : 0,
+  };
+}
+
 export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxAdjustment?: { aretsResultat: number; skatteskuld: number }): K2BalanceSheet {
   const ub = data.closingBalances;
   const amounts = (from: number, to: number) => {
@@ -198,7 +212,6 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
     }
     return result;
   };
-  // Credit accounts (2xxx) are stored as negative in SIE; negate to show as positive
   const amountsNeg = (from: number, to: number) => {
     const result: Record<number, number> = {};
     for (const yi of yearIndices) {
@@ -215,61 +228,46 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
     return result;
   };
 
-  // TILLGÅNGAR
-  // Anläggningstillgångar
+  const currentYearIndex = yearIndices[0];
+  const taxReceivables: Record<number, number> = {};
+  const taxLiabilities: Record<number, number> = {};
+  for (const yi of yearIndices) {
+    const extraTaxLiability = taxAdjustment && yi === currentYearIndex ? taxAdjustment.skatteskuld : 0;
+    const { receivable, liability } = getNetTaxPosition(ub, yi, extraTaxLiability);
+    taxReceivables[yi] = receivable;
+    taxLiabilities[yi] = liability;
+  }
+
   const immateriella = amounts(1000, 1099);
   const materiella = amounts(1100, 1299);
   const finansiellaAnl = amounts(1300, 1399);
   const summaAnlaggning = sumAmounts(immateriella, materiella, finansiellaAnl);
 
-  // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
   const kortfristigaFordringar = amounts(1500, 1899);
-  // Account 2518 (betald F-skatt) is a debit account = tax receivable, classify as asset
-  const skattefordran2518 = amounts(2518, 2518);
-  const summaKortfristigaFordringar = sumAmounts(kortfristigaFordringar, skattefordran2518);
+  const summaKortfristigaFordringar = sumAmounts(kortfristigaFordringar, taxReceivables);
   const kassaBank = amounts(1900, 1999);
   const summaOmsattning = sumAmounts(varulager, summaKortfristigaFordringar, kassaBank);
-
   const summaTillgangar = sumAmounts(summaAnlaggning, summaOmsattning);
 
-  // EGET KAPITAL OCH SKULDER
-  // Eget kapital
   const aktiekapital = amountsNeg(2080, 2089);
   const balanserat = amountsNeg(2090, 2098);
   const aretsResultatEK = amountsNeg(2099, 2099);
-  // Inject calculated årets resultat when tax bookings are missing from SIE
-  if (taxAdjustment) {
-    const yi = yearIndices[0]; // current year
-    if (yi !== undefined) {
-      aretsResultatEK[yi] = (aretsResultatEK[yi] || 0) + taxAdjustment.aretsResultat;
-    }
+  if (taxAdjustment && currentYearIndex !== undefined) {
+    aretsResultatEK[currentYearIndex] = (aretsResultatEK[currentYearIndex] || 0) + taxAdjustment.aretsResultat;
   }
   const summaEgetKapital = sumAmounts(aktiekapital, balanserat, aretsResultatEK);
 
-  // Obeskattade reserver (2100-2199, includes 2150 ackumulerade överavskrivningar etc.)
   const obeskatadeReserver = amountsNeg(2100, 2199);
-
-  // Avsättningar (2200-2299)
   const avsattningar = amountsNeg(2200, 2299);
-
-  // Långfristiga skulder (2300-2399)
   const summaLangfristiga = amountsNeg(2300, 2399);
 
-  // Kortfristiga skulder (2400-2999, excluding 2518 which is reclassified as asset)
   const kortfristigaSkulderRaw = amountsNeg(2400, 2999);
-  // Remove 2518 from liabilities (it was negated by amountsNeg, so add back the raw value)
-  const skattefordran2518Neg = amountsNeg(2518, 2518);
+  const taxAccountsAsLiabilities = amountsNeg(2510, 2519);
   const kortfristigaSkulder: Record<number, number> = {};
   for (const yi of yearIndices) {
-    kortfristigaSkulder[yi] = (kortfristigaSkulderRaw[yi] || 0) - (skattefordran2518Neg[yi] || 0);
-  }
-  // Inject calculated skatteskuld when tax bookings are missing from SIE
-  if (taxAdjustment) {
-    const yi = yearIndices[0];
-    if (yi !== undefined) {
-      kortfristigaSkulder[yi] = (kortfristigaSkulder[yi] || 0) + taxAdjustment.skatteskuld;
-    }
+    const ovrigaKortfristigaSkulder = (kortfristigaSkulderRaw[yi] || 0) - (taxAccountsAsLiabilities[yi] || 0);
+    kortfristigaSkulder[yi] = ovrigaKortfristigaSkulder + (taxLiabilities[yi] || 0);
   }
 
   const summaSkulder = sumAmounts(summaLangfristiga, kortfristigaSkulder);
@@ -344,7 +342,6 @@ export function calculateFlerarsOversikt(
   selectedYearIndex: number = 0,
   taxAdjustment?: { aretsResultat: number; skatteskuld: number }
 ): FlerarsOversikt {
-  // Show up to 4 years ending at the selected year
   const years = data.fiscalYears
     .filter(fy => fy.index <= selectedYearIndex && fy.index >= selectedYearIndex - 3)
     .sort((a, b) => b.index - a.index);
@@ -365,27 +362,23 @@ export function calculateFlerarsOversikt(
   for (const fy of years) {
     const yi = fy.index;
     nettoomsattning[yi] = -sumRange(res, yi, 3000, 3799);
-    
+
     const rorelseIntakter = -sumRange(res, yi, 3000, 3999);
     const rorelsekostnader = -sumRange(res, yi, 4000, 7999);
     const finansiellt = -sumRange(res, yi, 8000, 8699);
     resultatEfterFinansiella[yi] = rorelseIntakter + rorelsekostnader + finansiellt;
 
-    // Balansomslutning = summa tillgångar (1000-1999) + skattefordran 2518
-    // 2518 (betald F-skatt) has debit balance in 2xxx range, must be reclassified as asset
-    const totalAssets = sumRange(ub, yi, 1000, 1999) + sumRange(ub, yi, 2518, 2518);
+    const extraTaxLiability = yi === selectedYearIndex && taxAdjustment ? taxAdjustment.skatteskuld : 0;
+    const { receivable: taxReceivable } = getNetTaxPosition(ub, yi, extraTaxLiability);
+    const totalAssets = sumRange(ub, yi, 1000, 1999) + taxReceivable;
     balansomslutning[yi] = totalAssets;
 
-    // Soliditet = justerat eget kapital / balansomslutning × 100
-    // Justerat EK = EK + (1 - skattesats) × obeskattade reserver
     let egetKapital = -sumRange(ub, yi, 2080, 2099);
     const obeskatadeReserver = -sumRange(ub, yi, 2100, 2199);
-    
-    // For current year with tax adjustment, add calculated årets resultat to EK
     if (yi === selectedYearIndex && taxAdjustment) {
       egetKapital += taxAdjustment.aretsResultat;
     }
-    
+
     const justeratEK = egetKapital + (1 - 0.206) * obeskatadeReserver;
     soliditet[yi] = totalAssets !== 0 ? Math.round((justeratEK / totalAssets) * 100) : 0;
   }
