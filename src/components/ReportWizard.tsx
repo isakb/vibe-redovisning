@@ -73,7 +73,6 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
   const yearIndices = [selectedYearIndex, selectedYearIndex - 1];
   
   const incomeStatement = useMemo(() => calculateIncomeStatement(sieData, yearIndices), [sieData, selectedYearIndex]);
-  const balanceSheet = useMemo(() => calculateBalanceSheet(sieData, yearIndices), [sieData, selectedYearIndex]);
   const flerarsOversikt = useMemo(() => calculateFlerarsOversikt(sieData, selectedYearIndex), [sieData, selectedYearIndex]);
   const aretsResultat = incomeStatement.totalResult[selectedYearIndex] || 0;
 
@@ -88,6 +87,17 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
     () => calculateSkatteberakning(incomeStatement, reportData, sieData, selectedYearIndex),
     [incomeStatement, reportData, sieData, selectedYearIndex]
   );
+
+  // When tax bookings are missing, inject calculated tax into balance sheet
+  const taxAdjustment = useMemo(() => {
+    if (!skatteberakning.saknarSkattebokning) return undefined;
+    return {
+      aretsResultat: skatteberakning.aretsResultat,
+      skatteskuld: skatteberakning.skattPaAretsResultat,
+    };
+  }, [skatteberakning]);
+
+  const balanceSheet = useMemo(() => calculateBalanceSheet(sieData, yearIndices, taxAdjustment), [sieData, selectedYearIndex, taxAdjustment]);
 
   const egetKapitalForandring = useMemo(
     () => calculateEgetKapitalForandring(

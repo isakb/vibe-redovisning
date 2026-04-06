@@ -182,7 +182,7 @@ export function calculateIncomeStatement(data: SieData, yearIndices: number[]): 
   return { sections, totalResult: aretsResultat, bruttoresultat };
 }
 
-export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2BalanceSheet {
+export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxAdjustment?: { aretsResultat: number; skatteskuld: number }): K2BalanceSheet {
   const ub = data.closingBalances;
   const amounts = (from: number, to: number) => {
     const result: Record<number, number> = {};
@@ -228,6 +228,13 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
   const aktiekapital = amountsNeg(2080, 2089);
   const balanserat = amountsNeg(2090, 2098);
   const aretsResultatEK = amountsNeg(2099, 2099);
+  // Inject calculated årets resultat when tax bookings are missing from SIE
+  if (taxAdjustment) {
+    const yi = yearIndices[0]; // current year
+    if (yi !== undefined) {
+      aretsResultatEK[yi] = (aretsResultatEK[yi] || 0) + taxAdjustment.aretsResultat;
+    }
+  }
   const summaEgetKapital = sumAmounts(aktiekapital, balanserat, aretsResultatEK);
 
   // Obeskattade reserver (2100-2149)
@@ -243,6 +250,13 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[]): K2B
 
   // Kortfristiga skulder
   const kortfristigaSkulder = amountsNeg(2400, 2999);
+  // Inject calculated skatteskuld when tax bookings are missing from SIE
+  if (taxAdjustment) {
+    const yi = yearIndices[0];
+    if (yi !== undefined) {
+      kortfristigaSkulder[yi] = (kortfristigaSkulder[yi] || 0) + taxAdjustment.skatteskuld;
+    }
+  }
 
   const summaSkulder = sumAmounts(summaLangfristiga, kortfristigaSkulder);
   const summaEKochSkulder = sumAmounts(summaEgetKapital, obeskatadeReserver, avsattningar, summaSkulder);
