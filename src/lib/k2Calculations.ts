@@ -225,8 +225,11 @@ export function calculateBalanceSheet(data: SieData, yearIndices: number[], taxA
   // Omsättningstillgångar
   const varulager = amounts(1400, 1499);
   const kortfristigaFordringar = amounts(1500, 1899);
+  // Account 2518 (betald F-skatt) is a debit account = tax receivable, classify as asset
+  const skattefordran2518 = amounts(2518, 2518);
+  const summaKortfristigaFordringar = sumAmounts(kortfristigaFordringar, skattefordran2518);
   const kassaBank = amounts(1900, 1999);
-  const summaOmsattning = sumAmounts(varulager, kortfristigaFordringar, kassaBank);
+  const summaOmsattning = sumAmounts(varulager, summaKortfristigaFordringar, kassaBank);
 
   const summaTillgangar = sumAmounts(summaAnlaggning, summaOmsattning);
 
