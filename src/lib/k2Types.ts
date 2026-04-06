@@ -37,6 +37,7 @@ export interface ReportData {
   
   // Form toggle
   useAbbreviatedForm: boolean;
+  verifikationerGodkanda: boolean;
   
   // Noter
   redovisningsprinciper: string;
