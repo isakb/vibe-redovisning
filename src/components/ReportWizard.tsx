@@ -104,12 +104,14 @@ export function ReportWizard({ sieData, companyProfile, onCompanyProfileChange, 
 
   const aretsResultat = adjustedIncomeStatement.totalResult[selectedYearIndex] || 0;
 
-  // Update tillBalanseratResultat when year changes
+  // Update tillBalanseratResultat when year changes (full "till förfogande stående medel")
   useEffect(() => {
-    if (reportData.tillBalanseratResultat === 0 && aretsResultat !== 0) {
-      setReportData({ ...reportData, tillBalanseratResultat: aretsResultat });
+    const utgangRow = egetKapitalForandring.rows[egetKapitalForandring.rows.length - 1];
+    const tillForfogande = (utgangRow?.balanserat[selectedYearIndex] || 0) + (utgangRow?.aretsResultat[selectedYearIndex] || 0);
+    if (reportData.tillBalanseratResultat === 0 && tillForfogande !== 0) {
+      setReportData({ ...reportData, tillBalanseratResultat: tillForfogande });
     }
-  }, [selectedYearIndex, aretsResultat]);
+  }, [selectedYearIndex, egetKapitalForandring]);
 
   // When tax bookings are missing, inject calculated tax into balance sheet
   const taxAdjustment = useMemo(() => {
