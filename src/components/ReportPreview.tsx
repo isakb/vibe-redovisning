@@ -53,12 +53,12 @@ export function ReportPreview({
     <div className="max-w-3xl mx-auto bg-card border rounded-lg shadow-sm">
       {/* Balance warning */}
       {!balanceOk && (
-        <Alert variant="destructive" className="m-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="break-words">
+        <div className="mx-4 mt-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span className="leading-snug">
             Balansräkningen stämmer inte: Tillgångar ({formatSEK(totalA)}) ≠ Eget kapital och skulder ({formatSEK(totalEL)}). Differens: {formatSEK(totalA - totalEL)} kr.
-          </AlertDescription>
-        </Alert>
+          </span>
+        </div>
       )}
 
       {/* Cover page */}
