@@ -53,9 +53,9 @@ export function ReportPreview({
     <div className="max-w-3xl mx-auto bg-card border rounded-lg shadow-sm">
       {/* Balance warning */}
       {!balanceOk && (
-        <Alert variant="destructive" className="m-4 flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          <AlertDescription className="flex-1 min-w-0 break-words">
+        <Alert variant="destructive" className="m-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="break-words">
             Balansräkningen stämmer inte: Tillgångar ({formatSEK(totalA)}) ≠ Eget kapital och skulder ({formatSEK(totalEL)}). Differens: {formatSEK(totalA - totalEL)} kr.
           </AlertDescription>
         </Alert>
