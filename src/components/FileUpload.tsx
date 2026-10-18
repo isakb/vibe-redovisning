@@ -8,6 +8,8 @@ interface FileUploadProps {
   onFileParsed: (data: SieData) => void;
 }
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
 export function FileUpload({ onFileParsed }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [parsedFiles, setParsedFiles] = useState<{ name: string; data: SieData }[]>([]);
@@ -21,6 +23,10 @@ export function FileUpload({ onFileParsed }: FileUploadProps) {
     for (const file of Array.from(files)) {
       if (!file.name.match(/\.(se|si)$/i)) {
         toast({ title: 'Fel filformat', description: `${file.name} — Vänligen ladda upp .se eller .si filer (SIE 4).`, variant: 'destructive' });
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: 'Filen är för stor', description: `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB) — Maximal filstorlek är 50 MB.`, variant: 'destructive' });
         continue;
       }
       try {
